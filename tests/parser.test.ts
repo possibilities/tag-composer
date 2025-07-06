@@ -1,14 +1,14 @@
 import dedent from 'dedent'
 import { describe, it, expect } from 'vitest'
-import { parseContent } from '../src/parser'
+import { parse } from '../src/parser'
 
-describe('parseContent', () => {
+describe('parse', () => {
   it('should parse text', () => {
     const script = dedent`
       hello world
       goodbye world
     `
-    const parsed = parseContent(script)
+    const parsed = parse(script)
     expect(parsed).toEqual([
       {
         type: 'text',
@@ -28,7 +28,7 @@ describe('parseContent', () => {
       goodbye world
       !!command-for-integration-tests.sh
     `
-    const parsed = parseContent(script)
+    const parsed = parse(script)
 
     expect(parsed).toEqual([
       {
@@ -85,7 +85,7 @@ describe('parseContent', () => {
       !!
       hello
     `
-    expect(() => parseContent(script)).toThrow(
+    expect(() => parse(script)).toThrow(
       'Parse error at line 1: Command cannot be empty',
     )
   })
@@ -96,7 +96,7 @@ describe('parseContent', () => {
       !!   
       world
     `
-    expect(() => parseContent(script)).toThrow(
+    expect(() => parse(script)).toThrow(
       'Parse error at line 2: Command cannot be empty',
     )
   })
@@ -107,7 +107,7 @@ describe('parseContent', () => {
       !!echo "unclosed quote
       world
     `
-    expect(() => parseContent(script)).toThrow(
+    expect(() => parse(script)).toThrow(
       /Parse error at line 2: Invalid bash syntax/,
     )
   })
@@ -116,7 +116,7 @@ describe('parseContent', () => {
     const script = dedent`
       !!command-for-integration-tests.sh --exit-code 42 --stdout "hello world" --stderr "error message"
     `
-    const parsed = parseContent(script)
+    const parsed = parse(script)
 
     expect(parsed).toEqual([
       {

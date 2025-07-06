@@ -1,4 +1,4 @@
-import parse from 'bash-parser'
+import bashParse from 'bash-parser'
 
 interface TextLine {
   type: 'text'
@@ -17,7 +17,7 @@ function validateCommand(_ast: any): void {
   console.log('TODO implement validateCommand')
 }
 
-export function parseContent(input: string): ParsedLine[] {
+export function parse(input: string): ParsedLine[] {
   return input
     .split('\n')
     .filter(line => line.length > 0)
@@ -33,7 +33,7 @@ export function parseContent(input: string): ParsedLine[] {
         let ast
         try {
           // Parse the command (without the !! prefix)
-          ast = parse(line.substring(2))
+          ast = bashParse(line.substring(2))
         } catch (error) {
           throw new Error(
             `Parse error at line ${index + 1}: Invalid bash syntax - ${error instanceof Error ? error.message : 'Unknown error'}`,

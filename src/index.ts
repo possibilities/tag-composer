@@ -1,4 +1,6 @@
 import { Command } from 'commander'
+import { readFileSync } from 'fs'
+import { basename } from 'path'
 import packageJson from '../package.json' assert { type: 'json' }
 
 async function main() {
@@ -6,10 +8,27 @@ async function main() {
 
   program
     .name('fs-to-xml')
-    .description('FS to XML CLI')
+    .description('FS to XML CLI - A simple shebang interpreter')
     .version(packageJson.version)
-    .action(() => {
-      console.log('hello world')
+    .argument('<file>', 'script file to process')
+    .action(file => {
+      try {
+        const content = readFileSync(file, 'utf8')
+        const lines = content.split('\n')
+
+        const firstLine = lines[0]
+        const startsWithShebang = firstLine.startsWith('#!')
+
+        const contentToDisplay = startsWithShebang
+          ? lines.slice(1).join('\n')
+          : content
+
+        console.log(`=== Content from ${basename(file)} ===`)
+        console.log(contentToDisplay)
+      } catch (error: any) {
+        console.error(`Error reading file '${file}':`, error.message)
+        process.exit(1)
+      }
     })
 
   try {

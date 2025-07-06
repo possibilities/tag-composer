@@ -6,7 +6,7 @@ import { tmpdir } from 'os'
 import dedent from 'dedent'
 
 const cliPath = resolve('./dist/cli.js')
-const errorGeneratorPath = resolve('./test-helpers/error-generator.sh')
+const errorGeneratorPath = resolve('./tests/helpers/error-generator.sh')
 
 const testDir = join(
   tmpdir(),

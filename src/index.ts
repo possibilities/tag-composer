@@ -1,7 +1,7 @@
 import { Command } from 'commander'
 import { readFileSync } from 'fs'
 import { spawnSync } from 'child_process'
-import { basename, extname, dirname } from 'path'
+import { basename, extname, dirname, join } from 'path'
 import packageJson from '../package.json' assert { type: 'json' }
 import parse from 'bash-parser'
 import { validateAST } from './ast-validator.js'
@@ -30,10 +30,11 @@ function processASTNode(
   commandText?: string,
   isNested = false,
   isShebangMode = false,
+  scriptPath?: string,
 ): void {
   if (node.type === 'Script') {
     node.commands.forEach((cmd: any) =>
-      processASTNode(cmd, undefined, false, isShebangMode),
+      processASTNode(cmd, undefined, false, isShebangMode, scriptPath),
     )
     return
   }
@@ -44,19 +45,19 @@ function processASTNode(
       console.log('<command>')
     }
 
-    processASTNode(node.left, undefined, true, isShebangMode)
+    processASTNode(node.left, undefined, true, isShebangMode, scriptPath)
 
     const lastExitCode = global.lastExitCode || 0
 
     if (node.op === 'and') {
       console.log('  <logical-and-operator />')
       if (lastExitCode === 0) {
-        processASTNode(node.right, undefined, true, isShebangMode)
+        processASTNode(node.right, undefined, true, isShebangMode, scriptPath)
       }
     } else if (node.op === 'or') {
       console.log('  <logical-or-operator />')
       if (lastExitCode !== 0) {
-        processASTNode(node.right, undefined, true, isShebangMode)
+        processASTNode(node.right, undefined, true, isShebangMode, scriptPath)
       }
     }
 
@@ -183,7 +184,18 @@ function processASTNode(
       }
 
       try {
-        const content = readFileSync(filePath, 'utf8')
+        let resolvedPath = filePath
+        if (isShebangMode && scriptPath) {
+          if (filePath.startsWith('/')) {
+            resolvedPath = filePath
+          } else if (filePath.startsWith('.')) {
+            resolvedPath = filePath
+          } else {
+            resolvedPath = join(dirname(scriptPath), filePath)
+          }
+        }
+
+        const content = readFileSync(resolvedPath, 'utf8')
         const dirPath = dirname(filePath)
 
         if (isShebangMode) {
@@ -377,6 +389,7 @@ async function main() {
                 undefined,
                 false,
                 startsWithShebang,
+                file,
               )
             } else {
               const isFs2xmlCommand =
@@ -392,6 +405,7 @@ async function main() {
                 undefined,
                 false,
                 startsWithShebang,
+                file,
               )
 
               if (!shouldSkipWrapper) {

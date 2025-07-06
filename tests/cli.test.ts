@@ -13,10 +13,7 @@ const testDir = join(
   `fs-to-xml-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
 )
 
-const writeTestFile = (
-  path: string,
-  content: string = 'This is a test rule file.',
-): void => {
+const writeTestFile = (path: string, content: string): void => {
   const fullPath = join(testDir, path)
   const dir = dirname(fullPath)
   mkdirSync(dir, { recursive: true })
@@ -411,7 +408,7 @@ describe('FS to XML', () => {
 
   describe('fs-to-xml special command', () => {
     it('processes markdown file with single directory', () => {
-      writeTestFile('rules/test.md')
+      writeTestFile('rules/test.md', 'This is a test rule file.')
 
       const output = invokeScript(dedent`
         #!/usr/bin/env ${cliPath}
@@ -459,7 +456,7 @@ describe('FS to XML', () => {
     })
 
     it('fails when fs-to-xml is used in a pipe', () => {
-      writeTestFile('rules/test.md')
+      writeTestFile('rules/test.md', 'This is a test rule file.')
 
       let error = ''
       try {
@@ -475,7 +472,7 @@ describe('FS to XML', () => {
     })
 
     it('fails when fs-to-xml is used with logical operators', () => {
-      writeTestFile('rules/test.md')
+      writeTestFile('rules/test.md', 'This is a test rule file.')
 
       let error = ''
       try {
@@ -533,7 +530,7 @@ describe('FS to XML', () => {
 
   describe('Direct markdown file processing', () => {
     it('processes markdown file directly', () => {
-      writeTestFile('rules/test.md')
+      writeTestFile('rules/test.md', 'This is a test rule file.')
 
       const output = execSync(`${cliPath} rules/test.md`, {
         encoding: 'utf8',

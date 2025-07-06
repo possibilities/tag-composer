@@ -488,8 +488,9 @@ describe('FS to XML', () => {
         error = e.stderr || e.message
       }
 
-      expect(error).toContain('Error: fs-to-xml only supports .md files')
-      expect(error).toContain('.txt')
+      expect(error.trim()).toBe(
+        'Error: fs-to-xml only supports .md files, got .txt',
+      )
     })
 
     it('handles fs-to-xml with missing file', () => {
@@ -503,8 +504,9 @@ describe('FS to XML', () => {
         error = e.stderr || e.message
       }
 
-      expect(error).toContain('Error: fs-to-xml failed')
-      expect(error).toContain('ENOENT')
+      expect(error.trim()).toBe(
+        "Error: fs-to-xml failed - ENOENT: no such file or directory, open 'rules/nonexistent.md'",
+      )
     })
   })
 

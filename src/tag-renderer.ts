@@ -1,18 +1,7 @@
-interface TextLine {
-  type: 'text'
-  content: string
+interface ParsedLine {
+  type: string
+  [key: string]: any
 }
-
-interface CommandLine {
-  type: 'command'
-  content: string
-  commandName: string
-  statusCode: number
-  stdout: string
-  stderr: string
-}
-
-type ParsedLine = TextLine | CommandLine
 
 interface RenderOptions {
   indent?: string
@@ -32,38 +21,21 @@ export function renderToTags(
   output.push('<document>')
 
   for (const line of lines) {
-    if (line.type === 'text') {
-      output.push(`${renderIndent(1, indent)}<text>${line.content}</text>`)
-    } else if (line.type === 'command') {
-      const commandName = line.commandName
-      const exitCodeAttr =
-        line.statusCode !== undefined ? ` exitCode="${line.statusCode}"` : ''
+    const { type, ...rest } = line
 
-      output.push(
-        `${renderIndent(1, indent)}<command name="${commandName}"${exitCodeAttr}>`,
-      )
-      output.push(
-        `${renderIndent(2, indent)}<content>${line.content}</content>`,
-      )
+    output.push(`${renderIndent(1, indent)}<${type}>`)
 
-      if (line.stdout !== undefined && line.stdout !== '') {
-        output.push(
-          `${renderIndent(2, indent)}<stdout>${line.stdout.trimEnd()}</stdout>`,
-        )
+    for (const [key, value] of Object.entries(rest)) {
+      if (value === '') {
+        output.push(`${renderIndent(2, indent)}<${key} />`)
       } else {
-        output.push(`${renderIndent(2, indent)}<stdout></stdout>`)
-      }
-
-      if (line.stderr !== undefined && line.stderr !== '') {
         output.push(
-          `${renderIndent(2, indent)}<stderr>${line.stderr.trimEnd()}</stderr>`,
+          `${renderIndent(2, indent)}<${key}>${value.toString().trimEnd()}</${key}>`,
         )
-      } else {
-        output.push(`${renderIndent(2, indent)}<stderr></stderr>`)
       }
-
-      output.push(`${renderIndent(1, indent)}</command>`)
     }
+
+    output.push(`${renderIndent(1, indent)}</${type}>`)
   }
 
   output.push('</document>')

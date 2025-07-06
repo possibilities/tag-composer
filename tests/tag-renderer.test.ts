@@ -19,8 +19,12 @@ describe('renderToTags', () => {
 
     expect(result).toBe(dedent`
       <document>
-        <text>hello world</text>
-        <text>goodbye world</text>
+        <text>
+          <content>hello world</content>
+        </text>
+        <text>
+          <content>goodbye world</content>
+        </text>
       </document>
     `)
   })
@@ -41,10 +45,12 @@ describe('renderToTags', () => {
 
     expect(result).toBe(dedent`
       <document>
-        <command name="echo" exitCode="0">
+        <command>
           <content>echo "test"</content>
+          <commandName>echo</commandName>
+          <statusCode>0</statusCode>
           <stdout>test</stdout>
-          <stderr></stderr>
+          <stderr />
         </command>
       </document>
     `)
@@ -66,10 +72,12 @@ describe('renderToTags', () => {
 
     expect(result).toBe(dedent`
       <document>
-        <command name="false" exitCode="1">
+        <command>
           <content>false</content>
-          <stdout></stdout>
-          <stderr></stderr>
+          <commandName>false</commandName>
+          <statusCode>1</statusCode>
+          <stdout />
+          <stderr />
         </command>
       </document>
     `)
@@ -91,8 +99,10 @@ describe('renderToTags', () => {
 
     expect(result).toBe(dedent`
       <document>
-        <command name="command-with-error" exitCode="1">
+        <command>
           <content>command-with-error</content>
+          <commandName>command-with-error</commandName>
+          <statusCode>1</statusCode>
           <stdout>some output</stdout>
           <stderr>error message</stderr>
         </command>
@@ -124,13 +134,19 @@ describe('renderToTags', () => {
 
     expect(result).toBe(dedent`
       <document>
-        <text>Starting script</text>
-        <command name="echo" exitCode="0">
+        <text>
+          <content>Starting script</content>
+        </text>
+        <command>
           <content>echo "Hello"</content>
+          <commandName>echo</commandName>
+          <statusCode>0</statusCode>
           <stdout>Hello</stdout>
-          <stderr></stderr>
+          <stderr />
         </command>
-        <text>Script complete</text>
+        <text>
+          <content>Script complete</content>
+        </text>
       </document>
     `)
   })
@@ -155,11 +171,15 @@ describe('renderToTags', () => {
 
     expect(result).toBe(dedent`
       <document>
-          <text>hello</text>
-          <command name="echo" exitCode="0">
+          <text>
+              <content>hello</content>
+          </text>
+          <command>
               <content>echo "test"</content>
+              <commandName>echo</commandName>
+              <statusCode>0</statusCode>
               <stdout>test</stdout>
-              <stderr></stderr>
+              <stderr />
           </command>
       </document>
     `)
@@ -192,10 +212,12 @@ describe('renderToTags', () => {
 
     expect(result).toBe(dedent`
       <document>
-        <command name="true" exitCode="0">
+        <command>
           <content>true</content>
-          <stdout></stdout>
-          <stderr></stderr>
+          <commandName>true</commandName>
+          <statusCode>0</statusCode>
+          <stdout />
+          <stderr />
         </command>
       </document>
     `)

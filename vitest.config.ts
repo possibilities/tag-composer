@@ -17,6 +17,7 @@ export default defineConfig({
         'tests/helpers/**',
         '*.config.*',
         '**/*.d.ts',
+        '.prettierrc.js',
       ],
     },
   },

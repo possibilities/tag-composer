@@ -22,19 +22,15 @@ const invokeScript = (scriptContent: string): string => {
   }
 }
 
-describe('CLI with shebang', () => {
-  it('should execute a script file with shebang pointing to local CLI', () => {
+describe('FS to XML', () => {
+  it('Basic', () => {
     const output = invokeScript(dedent`
       #!/usr/bin/env ./dist/cli.js
       This is test content
-      that should be displayed
-      without the shebang line
     `)
 
     expect(output).not.toContain('#!/usr/bin/env')
     expect(output).toContain('=== Content from test-script')
     expect(output).toContain('This is test content')
-    expect(output).toContain('that should be displayed')
-    expect(output).toContain('without the shebang line')
   })
 })

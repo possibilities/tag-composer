@@ -29,7 +29,6 @@ export function parse(input: string): ParsedLine[] {
 
         let ast
         try {
-          // Parse the command (without the !! prefix)
           ast = bashParse(line.substring(2))
         } catch (error) {
           throw new Error(
@@ -37,7 +36,6 @@ export function parse(input: string): ParsedLine[] {
           )
         }
 
-        // Validate the command AST
         try {
           validateCommand(ast)
         } catch (error) {

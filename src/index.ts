@@ -5,8 +5,8 @@ async function main() {
   const program = new Command()
 
   program
-    .name('commanderjs-template')
-    .description('A template for creating CLI tools with Commander.js')
+    .name('fs-to-xml')
+    .description('FS to XML CLI')
     .version(packageJson.version)
     .action(() => {
       console.log('hello world')

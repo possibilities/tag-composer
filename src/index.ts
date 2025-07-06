@@ -1,6 +1,7 @@
 import { Command } from 'commander'
 import { readFileSync } from 'fs'
 import { spawnSync } from 'child_process'
+import { basename } from 'path'
 import packageJson from '../package.json' assert { type: 'json' }
 import parse from 'bash-parser'
 import { validateAST } from './ast-validator.js'
@@ -79,7 +80,7 @@ function processASTNode(
         lastOutput = result.stdout
         lastExitCode = result.exitCode
 
-        const commandName = cmd.name?.text || 'unknown'
+        const commandName = cmd.name?.text ? basename(cmd.name.text) : 'unknown'
         console.log(`  <${commandName}>`)
         console.log(`    <input>${commandText}</input>`)
 
@@ -103,7 +104,7 @@ function processASTNode(
         lastOutput = result.stdout
         lastExitCode = result.exitCode
 
-        const commandName = cmd.name?.text || 'unknown'
+        const commandName = cmd.name?.text ? basename(cmd.name.text) : 'unknown'
         console.log(`  <${commandName}>`)
         console.log(`    <input>${commandText}</input>`)
         if (isLast) {
@@ -142,7 +143,7 @@ function processASTNode(
     }
 
     const result = executeCommand(commandText)
-    const commandName = node.name?.text || 'unknown'
+    const commandName = node.name?.text ? basename(node.name.text) : 'unknown'
 
     console.log(`  <${commandName}>`)
     console.log(`    <input>${commandText}</input>`)

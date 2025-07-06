@@ -318,12 +318,12 @@ describe('FS to XML', () => {
 
     const expected = dedent`
       <command>
-        <./test-helpers/error-generator.sh>
+        <error-generator.sh>
           <input>./test-helpers/error-generator.sh --exit-code 2 --stderr "Command failed"</input>
           <stdout />
           <stderr>Command failed</stderr>
           <failure code="2" />
-        </./test-helpers/error-generator.sh>
+        </error-generator.sh>
       </command>
     `
 
@@ -343,12 +343,12 @@ describe('FS to XML', () => {
           <success code="0" />
         </echo>
         <pipe-operator />
-        <./test-helpers/error-generator.sh>
+        <error-generator.sh>
           <input>./test-helpers/error-generator.sh --exit-code 2 --stderr "Invalid option" --stdout filtered</input>
           <stdout>filtered</stdout>
           <stderr>Invalid option</stderr>
           <failure code="2" />
-        </./test-helpers/error-generator.sh>
+        </error-generator.sh>
       </command>
     `
 
@@ -363,12 +363,12 @@ describe('FS to XML', () => {
 
     const expected = dedent`
       <command>
-        <./test-helpers/error-generator.sh>
+        <error-generator.sh>
           <input>./test-helpers/error-generator.sh --exit-code 42 --stdout "Normal output" --stderr "Error output"</input>
           <stdout>Normal output</stdout>
           <stderr>Error output</stderr>
           <failure code="42" />
-        </./test-helpers/error-generator.sh>
+        </error-generator.sh>
       </command>
     `
 

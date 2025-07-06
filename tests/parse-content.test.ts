@@ -38,7 +38,7 @@ describe('parseContent', () => {
       {
         type: 'command',
         content: 'echo "test"',
-        ast: expect.any(Object),
+        commandName: 'echo',
         statusCode: 0,
         stdout: 'test\n',
         stderr: '',
@@ -96,7 +96,7 @@ describe('parseContent', () => {
       {
         type: 'command',
         content: `${testScriptPath} --exit-code 42 --stdout "hello world" --stderr "error message"`,
-        ast: expect.any(Object),
+        commandName: testScriptPath,
         statusCode: 42,
         stdout: 'hello world\n',
         stderr: 'error message\n',

@@ -6,7 +6,7 @@ interface TextLine {
 interface CommandLine {
   type: 'command'
   content: string
-  ast: any
+  commandName: string
   statusCode: number
   stdout: string
   stderr: string
@@ -16,13 +16,6 @@ type ParsedLine = TextLine | CommandLine
 
 interface RenderOptions {
   indent?: string
-}
-
-function extractCommandName(ast: any): string {
-  if (ast?.commands?.[0]?.name?.text) {
-    return ast.commands[0].name.text
-  }
-  return 'unknown'
 }
 
 function renderIndent(level: number, indent: string): string {
@@ -42,7 +35,7 @@ export function renderToTags(
     if (line.type === 'text') {
       output.push(`${renderIndent(1, indent)}<text>${line.content}</text>`)
     } else if (line.type === 'command') {
-      const commandName = extractCommandName(line.ast)
+      const commandName = line.commandName
       const exitCodeAttr =
         line.statusCode !== undefined ? ` exitCode="${line.statusCode}"` : ''
 

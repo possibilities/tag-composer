@@ -30,23 +30,7 @@ describe('renderToTags', () => {
       {
         type: 'command' as const,
         content: 'echo "test"',
-        ast: {
-          commands: [
-            {
-              type: 'Command',
-              name: {
-                text: 'echo',
-                type: 'Word',
-              },
-              suffix: [
-                {
-                  text: 'test',
-                  type: 'Word',
-                },
-              ],
-            },
-          ],
-        },
+        commandName: 'echo',
         statusCode: 0,
         stdout: 'test\n',
         stderr: '',
@@ -71,17 +55,7 @@ describe('renderToTags', () => {
       {
         type: 'command' as const,
         content: 'false',
-        ast: {
-          commands: [
-            {
-              type: 'Command',
-              name: {
-                text: 'false',
-                type: 'Word',
-              },
-            },
-          ],
-        },
+        commandName: 'false',
         statusCode: 1,
         stdout: '',
         stderr: '',
@@ -106,17 +80,7 @@ describe('renderToTags', () => {
       {
         type: 'command' as const,
         content: 'command-with-error',
-        ast: {
-          commands: [
-            {
-              type: 'Command',
-              name: {
-                text: 'command-with-error',
-                type: 'Word',
-              },
-            },
-          ],
-        },
+        commandName: 'command-with-error',
         statusCode: 1,
         stdout: 'some output\n',
         stderr: 'error message\n',
@@ -145,23 +109,7 @@ describe('renderToTags', () => {
       {
         type: 'command' as const,
         content: 'echo "Hello"',
-        ast: {
-          commands: [
-            {
-              type: 'Command',
-              name: {
-                text: 'echo',
-                type: 'Word',
-              },
-              suffix: [
-                {
-                  text: 'Hello',
-                  type: 'Word',
-                },
-              ],
-            },
-          ],
-        },
+        commandName: 'echo',
         statusCode: 0,
         stdout: 'Hello\n',
         stderr: '',
@@ -196,17 +144,7 @@ describe('renderToTags', () => {
       {
         type: 'command' as const,
         content: 'echo "test"',
-        ast: {
-          commands: [
-            {
-              type: 'Command',
-              name: {
-                text: 'echo',
-                type: 'Word',
-              },
-            },
-          ],
-        },
+        commandName: 'echo',
         statusCode: 0,
         stdout: 'test\n',
         stderr: '',
@@ -243,17 +181,7 @@ describe('renderToTags', () => {
       {
         type: 'command' as const,
         content: 'true',
-        ast: {
-          commands: [
-            {
-              type: 'Command',
-              name: {
-                text: 'true',
-                type: 'Word',
-              },
-            },
-          ],
-        },
+        commandName: 'true',
         statusCode: 0,
         stdout: '',
         stderr: '',
@@ -278,7 +206,7 @@ describe('renderToTags', () => {
       {
         type: 'command' as const,
         content: 'some-command',
-        ast: null,
+        commandName: 'unknown',
         statusCode: 0,
         stdout: 'output',
         stderr: '',

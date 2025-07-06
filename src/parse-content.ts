@@ -10,7 +10,7 @@ interface TextLine {
 interface CommandLine {
   type: 'command'
   content: string
-  ast: any
+  commandName: string
   statusCode: number
   stdout: string
   stderr: string
@@ -50,10 +50,12 @@ export function parseContent(input: string): ParsedLine[] {
 
         const result = executeCommand(line.substring(2))
 
+        const commandName = ast?.commands?.[0]?.name?.text || 'unknown'
+
         const commandLine: CommandLine = {
           type: 'command',
           content: line.substring(2),
-          ast,
+          commandName,
           statusCode: result.statusCode,
           stdout: result.stdout,
           stderr: result.stderr,

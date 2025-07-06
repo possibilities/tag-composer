@@ -316,7 +316,13 @@ function processASTNode(
             indent += '  '
           })
 
-          processMarkdownWithCommands(content, indent, buffer, scriptPath)
+          const tempBuffer = new OutputBuffer()
+          processMarkdownWithCommands(content, indent, tempBuffer, scriptPath)
+
+          const lines = tempBuffer.getLines()
+          lines.forEach(line => {
+            buffer.addLine(line)
+          })
 
           for (let i = pathParts.length - 1; i >= 0; i--) {
             indent = indent.slice(0, -2)
@@ -428,6 +434,11 @@ function indentMultilineContent(content: string, indent: string): string {
   return nonEmptyLines.map(line => `${indent}${line}`).join('\n')
 }
 
+interface ProcessMarkdownResult {
+  contentBuffer: OutputBuffer
+  siblingBuffers: OutputBuffer[]
+}
+
 function processMarkdownWithCommands(
   content: string,
   indent: string,
@@ -513,6 +524,98 @@ function processMarkdownWithCommands(
   })
 }
 
+function processMarkdownWithCommandsForShebang(
+  content: string,
+  indent: string,
+  scriptPath?: string,
+): ProcessMarkdownResult {
+  const lines = content.split('\n')
+  const contentBuffer = new OutputBuffer()
+  const siblingBuffers: OutputBuffer[] = []
+
+  lines.forEach(line => {
+    const trimmedLine = line.trim()
+
+    if (trimmedLine === '') {
+      return
+    }
+
+    if (line.trim().startsWith('!!')) {
+      const commandLine = line.trim().substring(2).trim()
+
+      if (commandLine === '') {
+        contentBuffer.addLine(`${indent}${line}`)
+        return
+      }
+
+      try {
+        const ast = parse(commandLine)
+
+        try {
+          validateAST(ast)
+        } catch (validationError: any) {
+          console.error(
+            `Validation error in markdown command: ${validationError.message}`,
+          )
+          process.exit(1)
+        }
+
+        const originalBuffer = new OutputBuffer()
+
+        if (
+          ast.commands[0]?.type === 'LogicalExpression' ||
+          ast.commands[0]?.type === 'Pipeline'
+        ) {
+          processASTNode(
+            ast.commands[0],
+            originalBuffer,
+            undefined,
+            false,
+            true,
+            scriptPath,
+          )
+        } else {
+          const isFs2xmlCommand = ast.commands[0]?.name?.text === 'fs-to-xml'
+          const shouldSkipWrapper = isFs2xmlCommand
+
+          if (!shouldSkipWrapper) {
+            originalBuffer.addLine('<command>')
+          }
+
+          processASTNode(
+            ast.commands[0],
+            originalBuffer,
+            undefined,
+            false,
+            true,
+            scriptPath,
+          )
+
+          if (!shouldSkipWrapper) {
+            originalBuffer.addLine('</command>')
+          }
+        }
+
+        if (ast.commands[0]?.name?.text === 'fs-to-xml') {
+          siblingBuffers.push(originalBuffer)
+        } else {
+          const outputLines = originalBuffer.getLines()
+          outputLines.forEach(outputLine => {
+            contentBuffer.addLine(`${indent}${outputLine}`)
+          })
+        }
+      } catch (parseError: any) {
+        console.error(`Error parsing markdown command: ${parseError.message}`)
+        process.exit(1)
+      }
+    } else {
+      contentBuffer.addLine(`${indent}${line}`)
+    }
+  })
+
+  return { contentBuffer, siblingBuffers }
+}
+
 declare global {
   var lastExitCode: number
 }
@@ -535,8 +638,11 @@ async function main() {
 
         if (ext === '.md') {
           const content = readFileSync(file, 'utf8')
-          const dirPath = dirname(file)
+          const lines = content.split('\n')
+          const firstLine = lines[0]
+          const startsWithShebang = firstLine.startsWith('#!')
 
+          const dirPath = dirname(file)
           const pathParts = dirPath
             .split('/')
             .filter(part => part && part !== '.' && part !== '..')
@@ -547,12 +653,40 @@ async function main() {
             indent += '  '
           })
 
-          buffer.addLine(indentMultilineContent(content, indent))
+          if (startsWithShebang) {
+            const contentToProcess = lines.slice(1).join('\n')
+            const result = processMarkdownWithCommandsForShebang(
+              contentToProcess,
+              indent,
+              file,
+            )
 
-          for (let i = pathParts.length - 1; i >= 0; i--) {
-            indent = indent.slice(0, -2)
-            buffer.addLine(`${indent}</${pathParts[i]}>`)
+            const contentLines = result.contentBuffer.getLines()
+            contentLines.forEach(line => {
+              buffer.addLine(line)
+            })
+
+            for (let i = pathParts.length - 1; i >= 0; i--) {
+              indent = indent.slice(0, -2)
+              buffer.addLine(`${indent}</${pathParts[i]}>`)
+            }
+
+            const parentIndent = indent
+            result.siblingBuffers.forEach(siblingBuffer => {
+              const siblingLines = siblingBuffer.getLines()
+              siblingLines.forEach(line => {
+                buffer.addLine(`${parentIndent}${line}`)
+              })
+            })
+          } else {
+            buffer.addLine(indentMultilineContent(content, indent))
+
+            for (let i = pathParts.length - 1; i >= 0; i--) {
+              indent = indent.slice(0, -2)
+              buffer.addLine(`${indent}</${pathParts[i]}>`)
+            }
           }
+
           buffer.flushAndFlatten(flatten)
           return
         }

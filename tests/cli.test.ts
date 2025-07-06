@@ -932,7 +932,6 @@ describe('FS to XML', () => {
         echo bar
       `)
 
-      // With flattening, all consecutive command tags are merged
       const expected = dedent`
         <command>
           <echo>
@@ -1134,7 +1133,7 @@ describe('FS to XML', () => {
       const markdownContent = dedent`
         Start
         !!
-        !!   
+        !!
         !! echo "valid command"
         End
       `
@@ -1149,7 +1148,7 @@ describe('FS to XML', () => {
         <rules>
           Start
           !!
-          !!   
+          !!
           <command>
             <echo>
               <input>echo "valid command"</input>
@@ -1289,6 +1288,38 @@ describe('FS to XML', () => {
 
       expect(output.trim()).toBe(expected)
     })
+
+    it('handles !! fs-to-xml commands as siblings in shebang markdown files', () => {
+      writeTestFile('rules/rule1.md', 'Rule 1 content')
+      writeTestFile('rules/rule2.md', 'Rule 2 content')
+
+      const markdownContent = dedent`
+        #!/usr/bin/env fs-to-xml
+        Main content
+        !!fs-to-xml ../rules/rule1.md
+        !!fs-to-xml ../rules/rule2.md
+        More content
+      `
+      writeTestFile('docs/main.md', markdownContent)
+
+      const output = execSync(`${cliPath} docs/main.md`, {
+        encoding: 'utf8',
+        cwd: testDir,
+      })
+
+      const expected = dedent`
+        <docs>
+          Main content
+          More content
+        </docs>
+        <rules>
+          Rule 1 content
+          Rule 2 content
+        </rules>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
   })
 
   describe('Path resolution in shebang mode', () => {
@@ -1301,7 +1332,6 @@ describe('FS to XML', () => {
         fs-to-xml ${absolutePath}
       `)
 
-      // For absolute paths, the full directory structure is shown
       const pathParts = dirname(absolutePath)
         .split('/')
         .filter(p => p && p !== '.')
@@ -1324,10 +1354,8 @@ describe('FS to XML', () => {
     })
 
     it('resolves explicit relative paths (./...) relative to script location', () => {
-      // Create a temporary script that uses explicit relative path
       const tmpScript = join(tmpdir(), 'test-explicit-path.sh')
 
-      // Create data file relative to the tmp script
       const tmpDataDir = join(dirname(tmpScript), 'data')
       mkdirSync(tmpDataDir, { recursive: true })
       writeFileSync(join(tmpDataDir, 'test.md'), 'Script-relative content')
@@ -1354,7 +1382,6 @@ describe('FS to XML', () => {
 
       expect(output.trim()).toBe(expected)
 
-      // Cleanup
       try {
         unlinkSync(tmpScript)
         rmSync(tmpDataDir, { recursive: true })
@@ -1362,7 +1389,6 @@ describe('FS to XML', () => {
     })
 
     it('resolves implicit relative paths relative to CWD', () => {
-      // Create data file in CWD
       writeTestFile('data/test.md', 'CWD-relative content')
 
       const output = invokeScript(dedent`
@@ -1380,14 +1406,11 @@ describe('FS to XML', () => {
     })
 
     it('handles mixed path types in the same script', () => {
-      // Create a temporary script that tests all three path types
       const tmpScript = join(tmpdir(), 'test-mixed-paths.sh')
 
-      // Create test files in CWD for implicit relative path
       writeTestFile('implicit/relative.md', 'Implicit relative content')
       writeTestFile('absolute/path.md', 'Absolute path content')
 
-      // Create data file relative to the tmp script location for explicit relative path
       const tmpDataDir = join(dirname(tmpScript), 'explicit')
       mkdirSync(tmpDataDir, { recursive: true })
       writeFileSync(
@@ -1412,10 +1435,8 @@ describe('FS to XML', () => {
         cwd: testDir,
       })
 
-      // Extract the test directory name for building the expected output
       const testDirName = basename(testDir)
 
-      // Build the complete expected output
       const expected = dedent`
         <command>
           <echo>
@@ -1441,7 +1462,6 @@ describe('FS to XML', () => {
 
       expect(output.trim()).toBe(expected)
 
-      // Cleanup
       try {
         unlinkSync(tmpScript)
         rmSync(tmpDataDir, { recursive: true })
@@ -1449,21 +1469,17 @@ describe('FS to XML', () => {
     })
 
     it('maintains correct behavior when script is run from different directory', () => {
-      // Create script in a known location
       const scriptDir = join(testDir, 'scripts')
       mkdirSync(scriptDir, { recursive: true })
       const scriptPath = join(scriptDir, 'script.sh')
 
-      // Create data relative to script location for explicit relative path
       const scriptDataDir = join(scriptDir, 'data')
       mkdirSync(scriptDataDir, { recursive: true })
       writeFileSync(join(scriptDataDir, 'test.md'), 'Script-relative content')
 
-      // Create a working directory and run from there
       const workDir = join(testDir, 'workdir')
       mkdirSync(workDir, { recursive: true })
 
-      // Create data relative to working directory for implicit relative path
       const workDataDir = join(workDir, 'other')
       mkdirSync(workDataDir, { recursive: true })
       writeFileSync(join(workDataDir, 'test.md'), 'CWD-relative content')

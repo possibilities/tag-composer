@@ -2,10 +2,8 @@
 const { execSync } = require('child_process')
 const path = require('path')
 
-// Test with relative paths containing ..
 const cliPath = path.join(__dirname, 'dist/cli.js')
 
-// Create a test markdown file
 const testContent = '# Test Content\nThis is a test file.'
 require('fs').writeFileSync('test.md', testContent)
 
@@ -16,5 +14,4 @@ const output = execSync(`${cliPath} ../test.md`, {
 })
 console.log(output)
 
-// Clean up
 require('fs').unlinkSync('test.md')

@@ -129,7 +129,7 @@ describe('FS to XML', () => {
       <command>
         <echo>
           <input>echo</input>
-          <output></output>
+          <output-is-empty />
         </echo>
       </command>
     `

@@ -39,7 +39,11 @@ async function main() {
             console.log('<command>')
             console.log(`  <${commandName}>`)
             console.log(`    <input>${line}</input>`)
-            console.log(`    <output>${trimmedOutput}</output>`)
+            if (trimmedOutput === '') {
+              console.log(`    <output-is-empty />`)
+            } else {
+              console.log(`    <output>${trimmedOutput}</output>`)
+            }
             console.log(`  </${commandName}>`)
             console.log('</command>')
           } catch (parseError: any) {

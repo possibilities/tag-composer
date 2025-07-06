@@ -29,12 +29,16 @@ describe('FS to XML', () => {
       echo "foo bar"
     `)
 
-    expect(output).toContain('<command>')
-    expect(output).toContain('<echo>')
-    expect(output).toContain('<input>echo "foo bar"</input>')
-    expect(output).toContain('<output>foo bar</output>')
-    expect(output).toContain('</echo>')
-    expect(output).toContain('</command>')
+    const expected = dedent`
+      <command>
+        <echo>
+          <input>echo "foo bar"</input>
+          <output>foo bar</output>
+        </echo>
+      </command>
+    `
+
+    expect(output.trim()).toBe(expected)
   })
 
   it('skips comment lines', () => {
@@ -45,11 +49,16 @@ describe('FS to XML', () => {
       # Another comment
     `)
 
-    expect(output).toContain('<command>')
-    expect(output).toContain('<echo>')
-    expect(output).toContain('<input>echo hello</input>')
-    expect(output).toContain('<output>hello</output>')
-    expect(output).not.toContain('comment')
+    const expected = dedent`
+      <command>
+        <echo>
+          <input>echo hello</input>
+          <output>hello</output>
+        </echo>
+      </command>
+    `
+
+    expect(output.trim()).toBe(expected)
   })
 
   it('outputs multiple echo commands', () => {
@@ -60,15 +69,28 @@ describe('FS to XML', () => {
       echo "third test"
     `)
 
-    expect(output).toContain('<input>echo first</input>')
-    expect(output).toContain('<output>first</output>')
-    expect(output).toContain('<input>echo second</input>')
-    expect(output).toContain('<output>second</output>')
-    expect(output).toContain('<input>echo "third test"</input>')
-    expect(output).toContain('<output>third test</output>')
+    const expected = dedent`
+      <command>
+        <echo>
+          <input>echo first</input>
+          <output>first</output>
+        </echo>
+      </command>
+      <command>
+        <echo>
+          <input>echo second</input>
+          <output>second</output>
+        </echo>
+      </command>
+      <command>
+        <echo>
+          <input>echo "third test"</input>
+          <output>third test</output>
+        </echo>
+      </command>
+    `
 
-    const commandCount = (output.match(/<command>/g) || []).length
-    expect(commandCount).toBe(3)
+    expect(output.trim()).toBe(expected)
   })
 
   it('handles empty lines', () => {
@@ -79,13 +101,22 @@ describe('FS to XML', () => {
       echo second
     `)
 
-    expect(output).toContain('<input>echo first</input>')
-    expect(output).toContain('<output>first</output>')
-    expect(output).toContain('<input>echo second</input>')
-    expect(output).toContain('<output>second</output>')
+    const expected = dedent`
+      <command>
+        <echo>
+          <input>echo first</input>
+          <output>first</output>
+        </echo>
+      </command>
+      <command>
+        <echo>
+          <input>echo second</input>
+          <output>second</output>
+        </echo>
+      </command>
+    `
 
-    const commandCount = (output.match(/<command>/g) || []).length
-    expect(commandCount).toBe(2)
+    expect(output.trim()).toBe(expected)
   })
 
   it('handles echo with no arguments', () => {
@@ -94,10 +125,16 @@ describe('FS to XML', () => {
       echo
     `)
 
-    expect(output).toContain('<command>')
-    expect(output).toContain('<echo>')
-    expect(output).toContain('<input>echo</input>')
-    expect(output).toContain('<output></output>')
+    const expected = dedent`
+      <command>
+        <echo>
+          <input>echo</input>
+          <output></output>
+        </echo>
+      </command>
+    `
+
+    expect(output.trim()).toBe(expected)
   })
 
   it('handles echo with multiple arguments', () => {
@@ -106,9 +143,15 @@ describe('FS to XML', () => {
       echo foo bar baz
     `)
 
-    expect(output).toContain('<command>')
-    expect(output).toContain('<echo>')
-    expect(output).toContain('<input>echo foo bar baz</input>')
-    expect(output).toContain('<output>foo bar baz</output>')
+    const expected = dedent`
+      <command>
+        <echo>
+          <input>echo foo bar baz</input>
+          <output>foo bar baz</output>
+        </echo>
+      </command>
+    `
+
+    expect(output.trim()).toBe(expected)
   })
 })

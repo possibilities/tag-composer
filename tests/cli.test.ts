@@ -89,12 +89,19 @@ describe('FS to XML', () => {
   })
 
   it('outputs multiple echo commands', () => {
-    const output = invokeScript(dedent`
-      #!/usr/bin/env ${cliPath}
+    writeTestFile(
+      'script.sh',
+      dedent`
       echo first
       echo second
       echo "third test"
-    `)
+    `,
+    )
+
+    const output = execSync(`${cliPath} --no-flatten script.sh`, {
+      encoding: 'utf8',
+      cwd: testDir,
+    })
 
     const expected = dedent`
       <command>
@@ -124,12 +131,19 @@ describe('FS to XML', () => {
   })
 
   it('handles empty lines', () => {
-    const output = invokeScript(dedent`
-      #!/usr/bin/env ${cliPath}
+    writeTestFile(
+      'script.sh',
+      dedent`
       echo first
 
       echo second
-    `)
+    `,
+    )
+
+    const output = execSync(`${cliPath} --no-flatten script.sh`, {
+      encoding: 'utf8',
+      cwd: testDir,
+    })
 
     const expected = dedent`
       <command>
@@ -792,6 +806,151 @@ describe('FS to XML', () => {
             Line three
           </foo>
         </rules>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+  })
+
+  describe('Tag flattening', () => {
+    it('flattens consecutive command tags by default', () => {
+      const output = invokeScript(dedent`
+        #!/usr/bin/env ${cliPath}
+        echo first
+        echo second
+        echo third
+      `)
+
+      const expected = dedent`
+        <command>
+          <echo>
+            <input>echo first</input>
+            <stdout>first</stdout>
+            <success code="0" />
+          </echo>
+          <echo>
+            <input>echo second</input>
+            <stdout>second</stdout>
+            <success code="0" />
+          </echo>
+          <echo>
+            <input>echo third</input>
+            <stdout>third</stdout>
+            <success code="0" />
+          </echo>
+        </command>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+
+    it('does not flatten when --no-flatten is used', () => {
+      writeTestFile(
+        'script.sh',
+        dedent`
+        echo first
+        echo second
+        echo third
+      `,
+      )
+
+      const output = execSync(`${cliPath} --no-flatten script.sh`, {
+        encoding: 'utf8',
+        cwd: testDir,
+      })
+
+      const expected = dedent`
+        <command>
+          <echo>
+            <input>echo first</input>
+            <stdout>first</stdout>
+            <success code="0" />
+          </echo>
+        </command>
+        <command>
+          <echo>
+            <input>echo second</input>
+            <stdout>second</stdout>
+            <success code="0" />
+          </echo>
+        </command>
+        <command>
+          <echo>
+            <input>echo third</input>
+            <stdout>third</stdout>
+            <success code="0" />
+          </echo>
+        </command>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+
+    it('flattens nested tags with same name', () => {
+      writeTestFile('rules/test1.md', 'First rule content')
+      writeTestFile('rules/test2.md', 'Second rule content')
+      writeTestFile(
+        'script.sh',
+        dedent`
+        fs-to-xml rules/test1.md
+        fs-to-xml rules/test2.md
+      `,
+      )
+
+      const output = execSync(`${cliPath} script.sh`, {
+        encoding: 'utf8',
+        cwd: testDir,
+      })
+
+      const expected = dedent`
+        <command>
+          <fs-to-xml>
+            <input>fs-to-xml rules/test1.md</input>
+            <rules>
+              First rule content
+            </rules>
+            <success code="0" />
+          </fs-to-xml>
+          <fs-to-xml>
+            <input>fs-to-xml rules/test2.md</input>
+            <rules>
+              Second rule content
+            </rules>
+            <success code="0" />
+          </fs-to-xml>
+        </command>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+
+    it('preserves different tag names when flattening', () => {
+      const output = invokeScript(dedent`
+        #!/usr/bin/env ${cliPath}
+        echo foo
+        ls
+        echo bar
+      `)
+
+      // With flattening, all consecutive command tags are merged
+      const expected = dedent`
+        <command>
+          <echo>
+            <input>echo foo</input>
+            <stdout>foo</stdout>
+            <success code="0" />
+          </echo>
+          <ls>
+            <input>ls</input>
+            <stdout />
+            <success code="0" />
+          </ls>
+          <echo>
+            <input>echo bar</input>
+            <stdout>bar</stdout>
+            <success code="0" />
+          </echo>
+        </command>
       `
 
       expect(output.trim()).toBe(expected)

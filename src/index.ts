@@ -12,6 +12,91 @@ interface CommandResult {
   exitCode: number
 }
 
+class OutputBuffer {
+  private lines: string[] = []
+
+  addLine(line: string): void {
+    this.lines.push(line)
+  }
+
+  getLines(): string[] {
+    return this.lines
+  }
+
+  flushAndFlatten(flatten: boolean): void {
+    if (flatten) {
+      const flattened = this.flattenConsecutiveTags(this.lines)
+      flattened.forEach(line => console.log(line))
+    } else {
+      this.lines.forEach(line => console.log(line))
+    }
+  }
+
+  private flattenConsecutiveTags(lines: string[]): string[] {
+    const result: string[] = []
+    let i = 0
+
+    while (i < lines.length) {
+      const currentLine = lines[i]
+      const openTagMatch = currentLine.match(/^(\s*)<([^/>]+)>$/)
+
+      if (openTagMatch) {
+        const indent = openTagMatch[1]
+        const tagName = openTagMatch[2]
+        const collectedContent: string[] = []
+        let j = i
+
+        while (j < lines.length) {
+          const checkLine = lines[j]
+          const checkOpenMatch = checkLine.match(/^(\s*)<([^/>]+)>$/)
+
+          if (
+            checkOpenMatch &&
+            checkOpenMatch[1] === indent &&
+            checkOpenMatch[2] === tagName
+          ) {
+            j++
+            const contentStartIndex = j
+
+            while (
+              j < lines.length &&
+              !lines[j].match(new RegExp(`^${indent}</${tagName}>$`))
+            ) {
+              j++
+            }
+
+            if (j < lines.length) {
+              for (let k = contentStartIndex; k < j; k++) {
+                collectedContent.push(lines[k])
+              }
+              j++
+            } else {
+              break
+            }
+          } else {
+            break
+          }
+        }
+
+        if (collectedContent.length > 0) {
+          result.push(`${indent}<${tagName}>`)
+          collectedContent.forEach(line => result.push(line))
+          result.push(`${indent}</${tagName}>`)
+          i = j
+        } else {
+          result.push(currentLine)
+          i++
+        }
+      } else {
+        result.push(currentLine)
+        i++
+      }
+    }
+
+    return result
+  }
+}
+
 function executeCommand(command: string): CommandResult {
   const result = spawnSync('bash', ['-c', command], {
     encoding: 'utf8',
@@ -27,6 +112,7 @@ function executeCommand(command: string): CommandResult {
 
 function processASTNode(
   node: any,
+  buffer: OutputBuffer,
   commandText?: string,
   isNested = false,
   isShebangMode = false,
@@ -34,7 +120,7 @@ function processASTNode(
 ): void {
   if (node.type === 'Script') {
     node.commands.forEach((cmd: any) =>
-      processASTNode(cmd, undefined, false, isShebangMode, scriptPath),
+      processASTNode(cmd, buffer, undefined, false, isShebangMode, scriptPath),
     )
     return
   }
@@ -42,34 +128,55 @@ function processASTNode(
   if (node.type === 'LogicalExpression') {
     const needsWrapper = !isNested
     if (needsWrapper) {
-      console.log('<command>')
+      buffer.addLine('<command>')
     }
 
-    processASTNode(node.left, undefined, true, isShebangMode, scriptPath)
+    processASTNode(
+      node.left,
+      buffer,
+      undefined,
+      true,
+      isShebangMode,
+      scriptPath,
+    )
 
     const lastExitCode = global.lastExitCode || 0
 
     if (node.op === 'and') {
-      console.log('  <logical-and-operator />')
+      buffer.addLine('  <logical-and-operator />')
       if (lastExitCode === 0) {
-        processASTNode(node.right, undefined, true, isShebangMode, scriptPath)
+        processASTNode(
+          node.right,
+          buffer,
+          undefined,
+          true,
+          isShebangMode,
+          scriptPath,
+        )
       }
     } else if (node.op === 'or') {
-      console.log('  <logical-or-operator />')
+      buffer.addLine('  <logical-or-operator />')
       if (lastExitCode !== 0) {
-        processASTNode(node.right, undefined, true, isShebangMode, scriptPath)
+        processASTNode(
+          node.right,
+          buffer,
+          undefined,
+          true,
+          isShebangMode,
+          scriptPath,
+        )
       }
     }
 
     if (needsWrapper) {
-      console.log('</command>')
+      buffer.addLine('</command>')
     }
     return
   }
 
   if (node.type === 'Pipeline') {
     if (!isNested) {
-      console.log('<command>')
+      buffer.addLine('<command>')
     }
 
     let lastOutput = ''
@@ -85,22 +192,22 @@ function processASTNode(
         lastExitCode = result.exitCode
 
         const commandName = cmd.name?.text ? basename(cmd.name.text) : 'unknown'
-        console.log(`  <${commandName}>`)
-        console.log(`    <input>${commandText}</input>`)
+        buffer.addLine(`  <${commandName}>`)
+        buffer.addLine(`    <input>${commandText}</input>`)
 
         const trimmedStderr = result.stderr.replace(/\n$/, '')
         if (trimmedStderr) {
-          console.log(`    <stderr>${trimmedStderr}</stderr>`)
+          buffer.addLine(`    <stderr>${trimmedStderr}</stderr>`)
         }
 
         if (lastExitCode === 0) {
-          console.log(`    <success code="0" />`)
+          buffer.addLine(`    <success code="0" />`)
         } else {
-          console.log(`    <failure code="${lastExitCode}" />`)
+          buffer.addLine(`    <failure code="${lastExitCode}" />`)
         }
-        console.log(`  </${commandName}>`)
+        buffer.addLine(`  </${commandName}>`)
       } else {
-        console.log('  <pipe-operator />')
+        buffer.addLine('  <pipe-operator />')
 
         const commandText = reconstructCommand(cmd)
         const pipeCommand = `echo '${lastOutput.replace(/'/g, "'\\''").replace(/\n$/, '')}' | ${commandText}`
@@ -109,34 +216,34 @@ function processASTNode(
         lastExitCode = result.exitCode
 
         const commandName = cmd.name?.text ? basename(cmd.name.text) : 'unknown'
-        console.log(`  <${commandName}>`)
-        console.log(`    <input>${commandText}</input>`)
+        buffer.addLine(`  <${commandName}>`)
+        buffer.addLine(`    <input>${commandText}</input>`)
         if (isLast) {
           const trimmedOutput = lastOutput.replace(/\n$/, '')
           if (trimmedOutput === '') {
-            console.log('    <stdout />')
+            buffer.addLine('    <stdout />')
           } else {
-            console.log(`    <stdout>${trimmedOutput}</stdout>`)
+            buffer.addLine(`    <stdout>${trimmedOutput}</stdout>`)
           }
         }
 
         const trimmedStderr = result.stderr.replace(/\n$/, '')
         if (trimmedStderr) {
-          console.log(`    <stderr>${trimmedStderr}</stderr>`)
+          buffer.addLine(`    <stderr>${trimmedStderr}</stderr>`)
         }
 
         if (lastExitCode === 0) {
-          console.log(`    <success code="0" />`)
+          buffer.addLine(`    <success code="0" />`)
         } else {
-          console.log(`    <failure code="${lastExitCode}" />`)
+          buffer.addLine(`    <failure code="${lastExitCode}" />`)
         }
-        console.log(`  </${commandName}>`)
+        buffer.addLine(`  </${commandName}>`)
       }
     })
 
     global.lastExitCode = lastExitCode
     if (!isNested) {
-      console.log('</command>')
+      buffer.addLine('</command>')
     }
     return
   }
@@ -148,13 +255,13 @@ function processASTNode(
       const filePath = node.suffix?.[0]?.text
       if (!filePath) {
         if (!isShebangMode) {
-          console.log('  <fs-to-xml>')
-          console.log('    <input>fs-to-xml</input>')
-          console.log(
+          buffer.addLine('  <fs-to-xml>')
+          buffer.addLine('    <input>fs-to-xml</input>')
+          buffer.addLine(
             '    <stderr>Error: fs-to-xml requires a file path</stderr>',
           )
-          console.log('    <failure code="1" />')
-          console.log('  </fs-to-xml>')
+          buffer.addLine('    <failure code="1" />')
+          buffer.addLine('  </fs-to-xml>')
         } else {
           console.error('Error: fs-to-xml requires a file path')
           process.exit(1)
@@ -166,13 +273,13 @@ function processASTNode(
       const ext = extname(filePath)
       if (ext !== '.md') {
         if (!isShebangMode) {
-          console.log('  <fs-to-xml>')
-          console.log(`    <input>fs-to-xml ${filePath}</input>`)
-          console.log(
+          buffer.addLine('  <fs-to-xml>')
+          buffer.addLine(`    <input>fs-to-xml ${filePath}</input>`)
+          buffer.addLine(
             `    <stderr>Error: fs-to-xml only supports .md files, got ${ext || 'no extension'}</stderr>`,
           )
-          console.log('    <failure code="1" />')
-          console.log('  </fs-to-xml>')
+          buffer.addLine('    <failure code="1" />')
+          buffer.addLine('  </fs-to-xml>')
         } else {
           console.error(
             `Error: fs-to-xml only supports .md files, got ${ext || 'no extension'}`,
@@ -205,19 +312,19 @@ function processASTNode(
 
           let indent = ''
           pathParts.forEach(part => {
-            console.log(`${indent}<${part}>`)
+            buffer.addLine(`${indent}<${part}>`)
             indent += '  '
           })
 
-          console.log(indentMultilineContent(content, indent))
+          buffer.addLine(indentMultilineContent(content, indent))
 
           for (let i = pathParts.length - 1; i >= 0; i--) {
             indent = indent.slice(0, -2)
-            console.log(`${indent}</${pathParts[i]}>`)
+            buffer.addLine(`${indent}</${pathParts[i]}>`)
           }
         } else {
-          console.log('  <fs-to-xml>')
-          console.log(`    <input>fs-to-xml ${filePath}</input>`)
+          buffer.addLine('  <fs-to-xml>')
+          buffer.addLine(`    <input>fs-to-xml ${filePath}</input>`)
 
           const pathParts = dirPath
             .split('/')
@@ -225,30 +332,30 @@ function processASTNode(
 
           let indent = '    '
           pathParts.forEach(part => {
-            console.log(`${indent}<${part}>`)
+            buffer.addLine(`${indent}<${part}>`)
             indent += '  '
           })
 
-          console.log(indentMultilineContent(content, indent))
+          buffer.addLine(indentMultilineContent(content, indent))
 
           for (let i = pathParts.length - 1; i >= 0; i--) {
             indent = indent.slice(0, -2)
-            console.log(`${indent}</${pathParts[i]}>`)
+            buffer.addLine(`${indent}</${pathParts[i]}>`)
           }
 
-          console.log('    <success code="0" />')
-          console.log('  </fs-to-xml>')
+          buffer.addLine('    <success code="0" />')
+          buffer.addLine('  </fs-to-xml>')
         }
         global.lastExitCode = 0
       } catch (error: any) {
         if (!isShebangMode) {
-          console.log('  <fs-to-xml>')
-          console.log(`    <input>fs-to-xml ${filePath}</input>`)
-          console.log(
+          buffer.addLine('  <fs-to-xml>')
+          buffer.addLine(`    <input>fs-to-xml ${filePath}</input>`)
+          buffer.addLine(
             `    <stderr>Error reading file: ${error.message}</stderr>`,
           )
-          console.log('    <failure code="1" />')
-          console.log('  </fs-to-xml>')
+          buffer.addLine('    <failure code="1" />')
+          buffer.addLine('  </fs-to-xml>')
         } else {
           console.error(`Error: fs-to-xml failed - ${error.message}`)
           process.exit(1)
@@ -265,27 +372,27 @@ function processASTNode(
     const result = executeCommand(commandText)
     const commandName = node.name?.text ? basename(node.name.text) : 'unknown'
 
-    console.log(`  <${commandName}>`)
-    console.log(`    <input>${commandText}</input>`)
+    buffer.addLine(`  <${commandName}>`)
+    buffer.addLine(`    <input>${commandText}</input>`)
 
     const trimmedStdout = result.stdout.replace(/\n$/, '')
     if (trimmedStdout === '') {
-      console.log('    <stdout />')
+      buffer.addLine('    <stdout />')
     } else {
-      console.log(`    <stdout>${trimmedStdout}</stdout>`)
+      buffer.addLine(`    <stdout>${trimmedStdout}</stdout>`)
     }
 
     const trimmedStderr = result.stderr.replace(/\n$/, '')
     if (trimmedStderr) {
-      console.log(`    <stderr>${trimmedStderr}</stderr>`)
+      buffer.addLine(`    <stderr>${trimmedStderr}</stderr>`)
     }
 
     if (result.exitCode === 0) {
-      console.log(`    <success code="0" />`)
+      buffer.addLine(`    <success code="0" />`)
     } else {
-      console.log(`    <failure code="${result.exitCode}" />`)
+      buffer.addLine(`    <failure code="${result.exitCode}" />`)
     }
-    console.log(`  </${commandName}>`)
+    buffer.addLine(`  </${commandName}>`)
 
     global.lastExitCode = result.exitCode
   }
@@ -332,8 +439,12 @@ async function main() {
     .name('fs-to-xml')
     .description('FS to XML CLI - A simple shebang interpreter')
     .version(packageJson.version)
+    .option('--no-flatten', 'disable flattening of consecutive same-named tags')
     .argument('<file>', 'script file to process')
-    .action(file => {
+    .action((file, options) => {
+      const buffer = new OutputBuffer()
+      const flatten = options.flatten !== false
+
       try {
         const ext = extname(file)
 
@@ -347,16 +458,17 @@ async function main() {
 
           let indent = ''
           pathParts.forEach(part => {
-            console.log(`${indent}<${part}>`)
+            buffer.addLine(`${indent}<${part}>`)
             indent += '  '
           })
 
-          console.log(indentMultilineContent(content, indent))
+          buffer.addLine(indentMultilineContent(content, indent))
 
           for (let i = pathParts.length - 1; i >= 0; i--) {
             indent = indent.slice(0, -2)
-            console.log(`${indent}</${pathParts[i]}>`)
+            buffer.addLine(`${indent}</${pathParts[i]}>`)
           }
+          buffer.flushAndFlatten(flatten)
           return
         }
 
@@ -393,6 +505,7 @@ async function main() {
             ) {
               processASTNode(
                 ast.commands[0],
+                buffer,
                 undefined,
                 false,
                 startsWithShebang,
@@ -404,11 +517,12 @@ async function main() {
               const shouldSkipWrapper = startsWithShebang && isFs2xmlCommand
 
               if (!shouldSkipWrapper) {
-                console.log('<command>')
+                buffer.addLine('<command>')
               }
 
               processASTNode(
                 ast.commands[0],
+                buffer,
                 undefined,
                 false,
                 startsWithShebang,
@@ -416,7 +530,7 @@ async function main() {
               )
 
               if (!shouldSkipWrapper) {
-                console.log('</command>')
+                buffer.addLine('</command>')
               }
             }
           } catch (parseError: any) {
@@ -426,6 +540,8 @@ async function main() {
             process.exit(1)
           }
         })
+
+        buffer.flushAndFlatten(flatten)
       } catch (error: any) {
         console.error(`Error reading file '${file}':`, error.message)
         process.exit(1)

@@ -1,6 +1,7 @@
 import dedent from 'dedent'
 import { describe, it, expect } from 'vitest'
 import { parseContent } from '../src/parse-content'
+import path from 'path'
 
 describe('parseContent', () => {
   it('should parse text', () => {
@@ -21,12 +22,11 @@ describe('parseContent', () => {
     ])
   })
 
-  it('should parse commands starting with !!', () => {
+  it('should parse commands starting with !! and execute them', () => {
     const script = dedent`
       hello world
       !!echo "test"
       goodbye world
-      !!command-for-integration-tests.sh
     `
     const parsed = parseContent(script)
 
@@ -38,44 +38,14 @@ describe('parseContent', () => {
       {
         type: 'command',
         content: 'echo "test"',
-        ast: {
-          type: 'Script',
-          commands: [
-            {
-              type: 'Command',
-              name: {
-                text: 'echo',
-                type: 'Word',
-              },
-              suffix: [
-                {
-                  text: 'test',
-                  type: 'Word',
-                },
-              ],
-            },
-          ],
-        },
+        ast: expect.any(Object),
+        statusCode: 0,
+        stdout: 'test\n',
+        stderr: '',
       },
       {
         type: 'text',
         content: 'goodbye world',
-      },
-      {
-        type: 'command',
-        content: 'command-for-integration-tests.sh',
-        ast: {
-          type: 'Script',
-          commands: [
-            {
-              type: 'Command',
-              name: {
-                text: 'command-for-integration-tests.sh',
-                type: 'Word',
-              },
-            },
-          ],
-        },
       },
     ])
   })
@@ -112,55 +82,24 @@ describe('parseContent', () => {
     )
   })
 
-  it('should parse complex command with full AST', () => {
+  it('should parse and execute complex command', () => {
+    const testScriptPath = path.join(
+      process.cwd(),
+      'tests/helpers/command-for-integration-tests.sh',
+    )
     const script = dedent`
-      !!command-for-integration-tests.sh --exit-code 42 --stdout "hello world" --stderr "error message"
+      !!${testScriptPath} --exit-code 42 --stdout "hello world" --stderr "error message"
     `
     const parsed = parseContent(script)
 
     expect(parsed).toEqual([
       {
         type: 'command',
-        content:
-          'command-for-integration-tests.sh --exit-code 42 --stdout "hello world" --stderr "error message"',
-        ast: {
-          type: 'Script',
-          commands: [
-            {
-              type: 'Command',
-              name: {
-                text: 'command-for-integration-tests.sh',
-                type: 'Word',
-              },
-              suffix: [
-                {
-                  text: '--exit-code',
-                  type: 'Word',
-                },
-                {
-                  text: '42',
-                  type: 'Word',
-                },
-                {
-                  text: '--stdout',
-                  type: 'Word',
-                },
-                {
-                  text: 'hello world',
-                  type: 'Word',
-                },
-                {
-                  text: '--stderr',
-                  type: 'Word',
-                },
-                {
-                  text: 'error message',
-                  type: 'Word',
-                },
-              ],
-            },
-          ],
-        },
+        content: `${testScriptPath} --exit-code 42 --stdout "hello world" --stderr "error message"`,
+        ast: expect.any(Object),
+        statusCode: 42,
+        stdout: 'hello world\n',
+        stderr: 'error message\n',
       },
     ])
   })

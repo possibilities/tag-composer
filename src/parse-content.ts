@@ -11,14 +11,14 @@ interface CommandLine {
   type: 'command'
   content: string
   ast: any
-  statusCode?: number
-  stdout?: string
-  stderr?: string
+  statusCode: number
+  stdout: string
+  stderr: string
 }
 
 type ParsedLine = TextLine | CommandLine
 
-export function parseContent(input: string, execute = false): ParsedLine[] {
+export function parseContent(input: string): ParsedLine[] {
   return input
     .split('\n')
     .filter(line => line.length > 0)
@@ -48,17 +48,15 @@ export function parseContent(input: string, execute = false): ParsedLine[] {
           )
         }
 
+        const result = executeCommand(line.substring(2))
+
         const commandLine: CommandLine = {
           type: 'command',
           content: line.substring(2),
           ast,
-        }
-
-        if (execute) {
-          const result = executeCommand(line.substring(2))
-          commandLine.statusCode = result.statusCode
-          commandLine.stdout = result.stdout
-          commandLine.stderr = result.stderr
+          statusCode: result.statusCode,
+          stdout: result.stdout,
+          stderr: result.stderr,
         }
 
         return commandLine

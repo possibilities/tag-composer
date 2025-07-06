@@ -23,17 +23,18 @@ const invokeScript = (scriptContent: string): string => {
 }
 
 describe('FS to XML', () => {
-  it('parses simple bash command', () => {
+  it('outputs simple echo command as XML', () => {
     const output = invokeScript(dedent`
       #!/usr/bin/env ./dist/cli.js
-      echo hello world
+      echo "foo bar"
     `)
 
-    const ast = JSON.parse(output)
-    expect(ast.type).toBe('Script')
-    expect(ast.commands).toHaveLength(1)
-    expect(ast.commands[0].type).toBe('Command')
-    expect(ast.commands[0].name.text).toBe('echo')
+    expect(output).toContain('<command>')
+    expect(output).toContain('<echo>')
+    expect(output).toContain('<input>echo "foo bar"</input>')
+    expect(output).toContain('<output>foo bar</output>')
+    expect(output).toContain('</echo>')
+    expect(output).toContain('</command>')
   })
 
   it('skips comment lines', () => {
@@ -44,39 +45,30 @@ describe('FS to XML', () => {
       # Another comment
     `)
 
-    const ast = JSON.parse(output)
-    expect(ast.type).toBe('Script')
-    expect(ast.commands).toHaveLength(1)
-    expect(ast.commands[0].name.text).toBe('echo')
+    expect(output).toContain('<command>')
+    expect(output).toContain('<echo>')
+    expect(output).toContain('<input>echo hello</input>')
+    expect(output).toContain('<output>hello</output>')
+    expect(output).not.toContain('comment')
   })
 
-  it('parses multiple commands', () => {
+  it('outputs multiple echo commands', () => {
     const output = invokeScript(dedent`
       #!/usr/bin/env ./dist/cli.js
-      ls -la
-      cd /tmp
-      echo "test"
+      echo first
+      echo second
+      echo "third test"
     `)
 
-    const jsonObjects = output
-      .trim()
-      .split(/}\n{/)
-      .map((obj, i, arr) => {
-        if (i === 0) return obj + '}'
-        if (i === arr.length - 1) return '{' + obj
-        return '{' + obj + '}'
-      })
+    expect(output).toContain('<input>echo first</input>')
+    expect(output).toContain('<output>first</output>')
+    expect(output).toContain('<input>echo second</input>')
+    expect(output).toContain('<output>second</output>')
+    expect(output).toContain('<input>echo "third test"</input>')
+    expect(output).toContain('<output>third test</output>')
 
-    expect(jsonObjects).toHaveLength(3)
-
-    const ast1 = JSON.parse(jsonObjects[0])
-    expect(ast1.commands[0].name.text).toBe('ls')
-
-    const ast2 = JSON.parse(jsonObjects[1])
-    expect(ast2.commands[0].name.text).toBe('cd')
-
-    const ast3 = JSON.parse(jsonObjects[2])
-    expect(ast3.commands[0].name.text).toBe('echo')
+    const commandCount = (output.match(/<command>/g) || []).length
+    expect(commandCount).toBe(3)
   })
 
   it('handles empty lines', () => {
@@ -87,21 +79,36 @@ describe('FS to XML', () => {
       echo second
     `)
 
-    const jsonObjects = output
-      .trim()
-      .split(/}\n{/)
-      .map((obj, i, arr) => {
-        if (i === 0) return obj + '}'
-        if (i === arr.length - 1) return '{' + obj
-        return '{' + obj + '}'
-      })
+    expect(output).toContain('<input>echo first</input>')
+    expect(output).toContain('<output>first</output>')
+    expect(output).toContain('<input>echo second</input>')
+    expect(output).toContain('<output>second</output>')
 
-    expect(jsonObjects).toHaveLength(2)
+    const commandCount = (output.match(/<command>/g) || []).length
+    expect(commandCount).toBe(2)
+  })
 
-    const ast1 = JSON.parse(jsonObjects[0])
-    expect(ast1.commands[0].name.text).toBe('echo')
+  it('handles echo with no arguments', () => {
+    const output = invokeScript(dedent`
+      #!/usr/bin/env ./dist/cli.js
+      echo
+    `)
 
-    const ast2 = JSON.parse(jsonObjects[1])
-    expect(ast2.commands[0].name.text).toBe('echo')
+    expect(output).toContain('<command>')
+    expect(output).toContain('<echo>')
+    expect(output).toContain('<input>echo</input>')
+    expect(output).toContain('<output></output>')
+  })
+
+  it('handles echo with multiple arguments', () => {
+    const output = invokeScript(dedent`
+      #!/usr/bin/env ./dist/cli.js
+      echo foo bar baz
+    `)
+
+    expect(output).toContain('<command>')
+    expect(output).toContain('<echo>')
+    expect(output).toContain('<input>echo foo bar baz</input>')
+    expect(output).toContain('<output>foo bar baz</output>')
   })
 })

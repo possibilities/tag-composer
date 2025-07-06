@@ -1,5 +1,6 @@
 import { Command } from 'commander'
 import { readFileSync } from 'fs'
+import { execSync } from 'child_process'
 import packageJson from '../package.json' assert { type: 'json' }
 import parse from 'bash-parser'
 
@@ -30,11 +31,22 @@ async function main() {
 
           try {
             const ast = parse(line)
-            console.log(JSON.stringify(ast, null, 2))
+            const commandName = ast.commands[0]?.name?.text || 'unknown'
+
+            const output = execSync(line, { encoding: 'utf8' })
+            const trimmedOutput = output.replace(/\n$/, '')
+
+            console.log('<command>')
+            console.log(`  <${commandName}>`)
+            console.log(`    <input>${line}</input>`)
+            console.log(`    <output>${trimmedOutput}</output>`)
+            console.log(`  </${commandName}>`)
+            console.log('</command>')
           } catch (parseError: any) {
             console.error(
               `Error parsing line ${index + 1}: ${parseError.message}`,
             )
+            process.exit(1)
           }
         })
       } catch (error: any) {

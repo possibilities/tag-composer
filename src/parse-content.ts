@@ -50,7 +50,12 @@ export function parseContent(input: string): ParsedLine[] {
 
         const result = executeCommand(line.substring(2))
 
-        const commandName = ast?.commands?.[0]?.name?.text || 'unknown'
+        const commandName = ast?.commands?.[0]?.name?.text
+        if (!commandName) {
+          throw new Error(
+            `Parse error at line ${index + 1}: Unable to extract command name from parsed AST`,
+          )
+        }
 
         const commandLine: CommandLine = {
           type: 'command',

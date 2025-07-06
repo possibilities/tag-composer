@@ -200,29 +200,4 @@ describe('renderToTags', () => {
       </document>
     `)
   })
-
-  it('should handle missing AST gracefully', () => {
-    const lines = [
-      {
-        type: 'command' as const,
-        content: 'some-command',
-        commandName: 'unknown',
-        statusCode: 0,
-        stdout: 'output',
-        stderr: '',
-      },
-    ]
-
-    const result = renderToTags(lines)
-
-    expect(result).toBe(dedent`
-      <document>
-        <command name="unknown" exitCode="0">
-          <content>some-command</content>
-          <stdout>output</stdout>
-          <stderr></stderr>
-        </command>
-      </document>
-    `)
-  })
 })

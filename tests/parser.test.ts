@@ -1,6 +1,7 @@
 import dedent from 'dedent'
 import { describe, it, expect } from 'vitest'
 import { parseContent } from '../src/parser'
+import { execSync } from 'child_process'
 
 describe('parseContent', () => {
   it('should parse text', () => {
@@ -26,7 +27,7 @@ describe('parseContent', () => {
       hello world
       !!echo "test"
       goodbye world
-      !!ls -la
+      !!command-for-integration-tests.sh
     `
     const result = parseContent(input)
     expect(result).toEqual([
@@ -44,7 +45,7 @@ describe('parseContent', () => {
       },
       {
         type: 'command',
-        content: 'ls -la',
+        content: 'command-for-integration-tests.sh',
       },
     ])
   })

@@ -416,15 +416,9 @@ describe('FS to XML', () => {
       `)
 
       const expected = dedent`
-        <command>
-          <fs-to-xml>
-            <input>fs-to-xml rules/test.md</input>
-            <rules>
-              This is a test rule file.
-            </rules>
-            <success code="0" />
-          </fs-to-xml>
-        </command>
+        <rules>
+          This is a test rule file.
+        </rules>
       `
 
       expect(output.trim()).toBe(expected)
@@ -439,17 +433,11 @@ describe('FS to XML', () => {
       `)
 
       const expected = dedent`
-        <command>
-          <fs-to-xml>
-            <input>fs-to-xml rules/foo/bar.md</input>
-            <rules>
-              <foo>
-                This is a nested rule file.
-              </foo>
-            </rules>
-            <success code="0" />
-          </fs-to-xml>
-        </command>
+        <rules>
+          <foo>
+            This is a nested rule file.
+          </foo>
+        </rules>
       `
 
       expect(output.trim()).toBe(expected)
@@ -496,13 +484,6 @@ describe('FS to XML', () => {
       `)
 
       const expected = dedent`
-        <command>
-          <fs-to-xml>
-            <input>fs-to-xml rules/test.txt</input>
-            <stderr>Error: fs-to-xml only supports .md files, got .txt</stderr>
-            <failure code="1" />
-          </fs-to-xml>
-        </command>
       `
 
       expect(output.trim()).toBe(expected)
@@ -515,11 +496,63 @@ describe('FS to XML', () => {
       `)
 
       const expected = dedent`
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+  })
+
+  describe('Mixed fs-to-xml scenarios', () => {
+    it('processes regular commands normally alongside fs-to-xml in shebang mode', () => {
+      writeTestFile('rules/test.md', 'This is a test rule file.')
+
+      const output = invokeScript(dedent`
+        #!/usr/bin/env ${cliPath}
+        echo "Starting process"
+        fs-to-xml rules/test.md
+        echo "Process complete"
+      `)
+
+      const expected = dedent`
+        <command>
+          <echo>
+            <input>echo "Starting process"</input>
+            <stdout>Starting process</stdout>
+            <success code="0" />
+          </echo>
+        </command>
+        <rules>
+          This is a test rule file.
+        </rules>
+        <command>
+          <echo>
+            <input>echo "Process complete"</input>
+            <stdout>Process complete</stdout>
+            <success code="0" />
+          </echo>
+        </command>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+
+    it('processes fs-to-xml without shebang mode normally', () => {
+      writeTestFile('rules/test.md', 'This is a test rule file.')
+      writeTestFile('script.sh', 'fs-to-xml rules/test.md')
+
+      const output = execSync(`${cliPath} script.sh`, {
+        encoding: 'utf8',
+        cwd: testDir,
+      })
+
+      const expected = dedent`
         <command>
           <fs-to-xml>
-            <input>fs-to-xml rules/nonexistent.md</input>
-            <stderr>Error reading file: ENOENT: no such file or directory, open 'rules/nonexistent.md'</stderr>
-            <failure code="1" />
+            <input>fs-to-xml rules/test.md</input>
+            <rules>
+              This is a test rule file.
+            </rules>
+            <success code="0" />
           </fs-to-xml>
         </command>
       `

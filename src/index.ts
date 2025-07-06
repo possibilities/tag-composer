@@ -29,9 +29,12 @@ function processASTNode(
   node: any,
   commandText?: string,
   isNested = false,
+  isShebangMode = false,
 ): void {
   if (node.type === 'Script') {
-    node.commands.forEach((cmd: any) => processASTNode(cmd))
+    node.commands.forEach((cmd: any) =>
+      processASTNode(cmd, undefined, false, isShebangMode),
+    )
     return
   }
 
@@ -41,19 +44,19 @@ function processASTNode(
       console.log('<command>')
     }
 
-    processASTNode(node.left, undefined, true)
+    processASTNode(node.left, undefined, true, isShebangMode)
 
     const lastExitCode = global.lastExitCode || 0
 
     if (node.op === 'and') {
       console.log('  <logical-and-operator />')
       if (lastExitCode === 0) {
-        processASTNode(node.right, undefined, true)
+        processASTNode(node.right, undefined, true, isShebangMode)
       }
     } else if (node.op === 'or') {
       console.log('  <logical-or-operator />')
       if (lastExitCode !== 0) {
-        processASTNode(node.right, undefined, true)
+        processASTNode(node.right, undefined, true, isShebangMode)
       }
     }
 
@@ -143,26 +146,30 @@ function processASTNode(
     if (isFs2xml) {
       const filePath = node.suffix?.[0]?.text
       if (!filePath) {
-        console.log('  <fs-to-xml>')
-        console.log('    <input>fs-to-xml</input>')
-        console.log(
-          '    <stderr>Error: fs-to-xml requires a file path</stderr>',
-        )
-        console.log('    <failure code="1" />')
-        console.log('  </fs-to-xml>')
+        if (!isShebangMode) {
+          console.log('  <fs-to-xml>')
+          console.log('    <input>fs-to-xml</input>')
+          console.log(
+            '    <stderr>Error: fs-to-xml requires a file path</stderr>',
+          )
+          console.log('    <failure code="1" />')
+          console.log('  </fs-to-xml>')
+        }
         global.lastExitCode = 1
         return
       }
 
       const ext = extname(filePath)
       if (ext !== '.md') {
-        console.log('  <fs-to-xml>')
-        console.log(`    <input>fs-to-xml ${filePath}</input>`)
-        console.log(
-          `    <stderr>Error: fs-to-xml only supports .md files, got ${ext || 'no extension'}</stderr>`,
-        )
-        console.log('    <failure code="1" />')
-        console.log('  </fs-to-xml>')
+        if (!isShebangMode) {
+          console.log('  <fs-to-xml>')
+          console.log(`    <input>fs-to-xml ${filePath}</input>`)
+          console.log(
+            `    <stderr>Error: fs-to-xml only supports .md files, got ${ext || 'no extension'}</stderr>`,
+          )
+          console.log('    <failure code="1" />')
+          console.log('  </fs-to-xml>')
+        }
         global.lastExitCode = 1
         return
       }
@@ -171,35 +178,58 @@ function processASTNode(
         const content = readFileSync(filePath, 'utf8')
         const dirPath = dirname(filePath)
 
-        console.log('  <fs-to-xml>')
-        console.log(`    <input>fs-to-xml ${filePath}</input>`)
+        if (isShebangMode) {
+          const pathParts = dirPath
+            .split('/')
+            .filter(part => part && part !== '.')
 
-        const pathParts = dirPath
-          .split('/')
-          .filter(part => part && part !== '.')
+          let indent = ''
+          pathParts.forEach(part => {
+            console.log(`${indent}<${part}>`)
+            indent += '  '
+          })
 
-        let indent = '    '
-        pathParts.forEach(part => {
-          console.log(`${indent}<${part}>`)
-          indent += '  '
-        })
+          console.log(`${indent}${content.replace(/\n$/, '')}`)
 
-        console.log(`${indent}${content.replace(/\n$/, '')}`)
+          for (let i = pathParts.length - 1; i >= 0; i--) {
+            indent = indent.slice(0, -2)
+            console.log(`${indent}</${pathParts[i]}>`)
+          }
+        } else {
+          console.log('  <fs-to-xml>')
+          console.log(`    <input>fs-to-xml ${filePath}</input>`)
 
-        for (let i = pathParts.length - 1; i >= 0; i--) {
-          indent = indent.slice(0, -2)
-          console.log(`${indent}</${pathParts[i]}>`)
+          const pathParts = dirPath
+            .split('/')
+            .filter(part => part && part !== '.')
+
+          let indent = '    '
+          pathParts.forEach(part => {
+            console.log(`${indent}<${part}>`)
+            indent += '  '
+          })
+
+          console.log(`${indent}${content.replace(/\n$/, '')}`)
+
+          for (let i = pathParts.length - 1; i >= 0; i--) {
+            indent = indent.slice(0, -2)
+            console.log(`${indent}</${pathParts[i]}>`)
+          }
+
+          console.log('    <success code="0" />')
+          console.log('  </fs-to-xml>')
         }
-
-        console.log('    <success code="0" />')
-        console.log('  </fs-to-xml>')
         global.lastExitCode = 0
       } catch (error: any) {
-        console.log('  <fs-to-xml>')
-        console.log(`    <input>fs-to-xml ${filePath}</input>`)
-        console.log(`    <stderr>Error reading file: ${error.message}</stderr>`)
-        console.log('    <failure code="1" />')
-        console.log('  </fs-to-xml>')
+        if (!isShebangMode) {
+          console.log('  <fs-to-xml>')
+          console.log(`    <input>fs-to-xml ${filePath}</input>`)
+          console.log(
+            `    <stderr>Error reading file: ${error.message}</stderr>`,
+          )
+          console.log('    <failure code="1" />')
+          console.log('  </fs-to-xml>')
+        }
         global.lastExitCode = 1
       }
       return
@@ -331,12 +361,31 @@ async function main() {
               ast.commands[0]?.type === 'LogicalExpression' ||
               ast.commands[0]?.type === 'Pipeline'
             ) {
-              processASTNode(ast.commands[0])
+              processASTNode(
+                ast.commands[0],
+                undefined,
+                false,
+                startsWithShebang,
+              )
             } else {
-              console.log('<command>')
+              const isFs2xmlCommand =
+                ast.commands[0]?.name?.text === 'fs-to-xml'
+              const shouldSkipWrapper = startsWithShebang && isFs2xmlCommand
 
-              processASTNode(ast.commands[0])
-              console.log('</command>')
+              if (!shouldSkipWrapper) {
+                console.log('<command>')
+              }
+
+              processASTNode(
+                ast.commands[0],
+                undefined,
+                false,
+                startsWithShebang,
+              )
+
+              if (!shouldSkipWrapper) {
+                console.log('</command>')
+              }
             }
           } catch (parseError: any) {
             console.error(

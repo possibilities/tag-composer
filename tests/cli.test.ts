@@ -5,11 +5,9 @@ import { join, dirname, resolve } from 'path'
 import { tmpdir } from 'os'
 import dedent from 'dedent'
 
-// Get absolute paths
 const cliPath = resolve('./dist/cli.js')
 const errorGeneratorPath = resolve('./test-helpers/error-generator.sh')
 
-// Create a unique test directory for each test run
 const testDir = join(
   tmpdir(),
   `fs-to-xml-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -132,7 +130,7 @@ describe('FS to XML', () => {
     const output = invokeScript(dedent`
       #!/usr/bin/env ${cliPath}
       echo first
-      
+
       echo second
     `)
 

@@ -128,7 +128,7 @@ function checkForExpansions(node: any, path: string = ''): void {
 function checkForFsToXmlInCompound(command: any): void {
   if (command.type === 'Command') {
     if (command.name?.text === 'fs-to-xml') {
-      return // Simple command is allowed
+      return
     }
   } else if (command.type === 'Pipeline') {
     command.commands.forEach((cmd: any) => {

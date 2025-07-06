@@ -141,7 +141,6 @@ function processASTNode(
     const isFs2xml = node.name?.text === 'fs-to-xml'
 
     if (isFs2xml) {
-      // Handle fs-to-xml specially - read the file directly
       const filePath = node.suffix?.[0]?.text
       if (!filePath) {
         console.log('  <fs-to-xml>')
@@ -175,22 +174,18 @@ function processASTNode(
         console.log('  <fs-to-xml>')
         console.log(`    <input>fs-to-xml ${filePath}</input>`)
 
-        // Build XML structure from path
         const pathParts = dirPath
           .split('/')
           .filter(part => part && part !== '.')
 
-        // Output nested XML tags
         let indent = '    '
         pathParts.forEach(part => {
           console.log(`${indent}<${part}>`)
           indent += '  '
         })
 
-        // Output content
         console.log(`${indent}${content.replace(/\n$/, '')}`)
 
-        // Close nested XML tags
         for (let i = pathParts.length - 1; i >= 0; i--) {
           indent = indent.slice(0, -2)
           console.log(`${indent}</${pathParts[i]}>`)
@@ -210,7 +205,6 @@ function processASTNode(
       return
     }
 
-    // Regular command handling
     if (!commandText) {
       commandText = reconstructCommand(node)
     }
@@ -254,7 +248,6 @@ function reconstructCommand(node: any): string {
   if (node.suffix) {
     node.suffix.forEach((item: any) => {
       if (item.text) {
-        // Check if the text contains spaces or special characters that need quoting
         const text = item.text
         if (text.includes(' ') || text.includes('\n') || text.includes('\t')) {
           parts.push(`"${text}"`)
@@ -284,27 +277,22 @@ async function main() {
       try {
         const ext = extname(file)
 
-        // Handle markdown files directly
         if (ext === '.md') {
           const content = readFileSync(file, 'utf8')
           const dirPath = dirname(file)
 
-          // Build XML structure from path
           const pathParts = dirPath
             .split('/')
             .filter(part => part && part !== '.')
 
-          // Output nested XML tags
           let indent = ''
           pathParts.forEach(part => {
             console.log(`${indent}<${part}>`)
             indent += '  '
           })
 
-          // Output content
           console.log(`${indent}${content.replace(/\n$/, '')}`)
 
-          // Close nested XML tags
           for (let i = pathParts.length - 1; i >= 0; i--) {
             indent = indent.slice(0, -2)
             console.log(`${indent}</${pathParts[i]}>`)
@@ -346,7 +334,7 @@ async function main() {
               processASTNode(ast.commands[0])
             } else {
               console.log('<command>')
-              // Don't pass line as commandText so that fs-to-xml can be transformed
+
               processASTNode(ast.commands[0])
               console.log('</command>')
             }

@@ -209,7 +209,7 @@ function processASTNode(
             indent += '  '
           })
 
-          console.log(`${indent}${content.replace(/\n$/, '')}`)
+          console.log(indentMultilineContent(content, indent))
 
           for (let i = pathParts.length - 1; i >= 0; i--) {
             indent = indent.slice(0, -2)
@@ -229,7 +229,7 @@ function processASTNode(
             indent += '  '
           })
 
-          console.log(`${indent}${content.replace(/\n$/, '')}`)
+          console.log(indentMultilineContent(content, indent))
 
           for (let i = pathParts.length - 1; i >= 0; i--) {
             indent = indent.slice(0, -2)
@@ -314,6 +314,13 @@ function reconstructCommand(node: any): string {
   return parts.join(' ')
 }
 
+function indentMultilineContent(content: string, indent: string): string {
+  const trimmedContent = content.replace(/\n$/, '')
+  const lines = trimmedContent.split('\n')
+  const nonEmptyLines = lines.filter(line => line.trim() !== '')
+  return nonEmptyLines.map(line => `${indent}${line}`).join('\n')
+}
+
 declare global {
   var lastExitCode: number
 }
@@ -344,7 +351,7 @@ async function main() {
             indent += '  '
           })
 
-          console.log(`${indent}${content.replace(/\n$/, '')}`)
+          console.log(indentMultilineContent(content, indent))
 
           for (let i = pathParts.length - 1; i >= 0; i--) {
             indent = indent.slice(0, -2)

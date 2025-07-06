@@ -508,6 +508,90 @@ describe('FS to XML', () => {
         "Error: fs-to-xml failed - ENOENT: no such file or directory, open 'rules/nonexistent.md'",
       )
     })
+
+    it('properly indents multi-line content in shebang mode', () => {
+      const multiLineContent = dedent`
+        - First rule
+          - Sub rule one
+          - Sub rule two
+        - Second rule
+      `
+      writeTestFile('rules/test.md', multiLineContent)
+
+      const output = invokeScript(dedent`
+        #!/usr/bin/env ${cliPath}
+        fs-to-xml rules/test.md
+      `)
+
+      const expected = dedent`
+        <rules>
+          - First rule
+            - Sub rule one
+            - Sub rule two
+          - Second rule
+        </rules>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+
+    it('strips empty lines in fs-to-xml shebang mode', () => {
+      const contentWithEmptyLines = dedent`
+        Line one
+
+        Line two
+
+
+        Line three
+      `
+      writeTestFile('rules/test.md', contentWithEmptyLines)
+
+      const output = invokeScript(dedent`
+        #!/usr/bin/env ${cliPath}
+        fs-to-xml rules/test.md
+      `)
+
+      const expected = dedent`
+        <rules>
+          Line one
+          Line two
+          Line three
+        </rules>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+
+    it('handles multi-line content in non-shebang mode', () => {
+      const multiLineContent = dedent`
+        Content line 1
+        Content line 2
+        Content line 3
+      `
+      writeTestFile('rules/test.md', multiLineContent)
+      writeTestFile('script.sh', 'fs-to-xml rules/test.md')
+
+      const output = execSync(`${cliPath} script.sh`, {
+        encoding: 'utf8',
+        cwd: testDir,
+      })
+
+      const expected = dedent`
+        <command>
+          <fs-to-xml>
+            <input>fs-to-xml rules/test.md</input>
+            <rules>
+              Content line 1
+              Content line 2
+              Content line 3
+            </rules>
+            <success code="0" />
+          </fs-to-xml>
+        </command>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
   })
 
   describe('Mixed fs-to-xml scenarios', () => {
@@ -599,6 +683,113 @@ describe('FS to XML', () => {
         <rules>
           <foo>
             This is a nested rule file.
+          </foo>
+        </rules>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+
+    it('properly indents multi-line content', () => {
+      const multiLineContent = dedent`
+        You are an experienced software engineer who is product focused
+        - Always come with an open mind, a zen mind, a beginners mind
+        - Before doing any work think deeply and make a clear plan to follow
+        - Obsessively serve people and make them happy with a simple, minimilistic, approach to software, technology, UIs, and UX
+          - Prioritize people, users, product, and design
+      `
+      writeTestFile('rules/test.md', multiLineContent)
+
+      const output = execSync(`${cliPath} rules/test.md`, {
+        encoding: 'utf8',
+        cwd: testDir,
+      })
+
+      const expected = dedent`
+        <rules>
+          You are an experienced software engineer who is product focused
+          - Always come with an open mind, a zen mind, a beginners mind
+          - Before doing any work think deeply and make a clear plan to follow
+          - Obsessively serve people and make them happy with a simple, minimilistic, approach to software, technology, UIs, and UX
+            - Prioritize people, users, product, and design
+        </rules>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+
+    it('strips empty lines from content', () => {
+      const contentWithEmptyLines = dedent`
+        First line
+
+        Second line
+
+
+        Third line
+      `
+      writeTestFile('rules/test.md', contentWithEmptyLines)
+
+      const output = execSync(`${cliPath} rules/test.md`, {
+        encoding: 'utf8',
+        cwd: testDir,
+      })
+
+      const expected = dedent`
+        <rules>
+          First line
+          Second line
+          Third line
+        </rules>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+
+    it('preserves original indentation within lines', () => {
+      const contentWithIndentation = dedent`
+        - Top level item
+            - Deeply indented item
+          - Medium indented item
+        - Another top level item
+      `
+      writeTestFile('rules/test.md', contentWithIndentation)
+
+      const output = execSync(`${cliPath} rules/test.md`, {
+        encoding: 'utf8',
+        cwd: testDir,
+      })
+
+      const expected = dedent`
+        <rules>
+          - Top level item
+              - Deeply indented item
+            - Medium indented item
+          - Another top level item
+        </rules>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+
+    it('handles multi-line content in nested directories', () => {
+      const multiLineContent = dedent`
+        Line one
+        Line two
+        Line three
+      `
+      writeTestFile('rules/foo/bar.md', multiLineContent)
+
+      const output = execSync(`${cliPath} rules/foo/bar.md`, {
+        encoding: 'utf8',
+        cwd: testDir,
+      })
+
+      const expected = dedent`
+        <rules>
+          <foo>
+            Line one
+            Line two
+            Line three
           </foo>
         </rules>
       `

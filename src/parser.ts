@@ -1,4 +1,5 @@
 import bashParse from 'bash-parser'
+import { validateCommand } from './validate-command.js'
 
 interface TextLine {
   type: 'text'
@@ -12,10 +13,6 @@ interface CommandLine {
 }
 
 type ParsedLine = TextLine | CommandLine
-
-function validateCommand(_ast: any): void {
-  console.log('TODO implement validateCommand')
-}
 
 export function parse(input: string): ParsedLine[] {
   return input
@@ -41,7 +38,13 @@ export function parse(input: string): ParsedLine[] {
         }
 
         // Validate the command AST
-        validateCommand(ast)
+        try {
+          validateCommand(ast)
+        } catch (error) {
+          throw new Error(
+            `Parse error at line ${index + 1}: ${error instanceof Error ? error.message : 'Unknown validation error'}`,
+          )
+        }
 
         return {
           type: 'command',

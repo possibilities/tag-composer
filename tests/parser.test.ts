@@ -164,4 +164,13 @@ describe('parse', () => {
       },
     ])
   })
+
+  it('should throw error for compound commands', () => {
+    const script = dedent`
+      !!echo hello | grep hello
+    `
+    expect(() => parse(script)).toThrow(
+      'Parse error at line 1: Only simple commands are allowed, found Pipeline',
+    )
+  })
 })

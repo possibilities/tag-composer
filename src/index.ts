@@ -18,6 +18,10 @@ interface XmlNode {
   children: XmlNode[]
 }
 
+interface ProcessingResult {
+  exitCode: number
+}
+
 class OutputBuffer {
   private lines: string[] = []
 
@@ -123,12 +127,21 @@ function processASTNode(
   isNested = false,
   isShebangMode = false,
   scriptPath?: string,
-): void {
+): ProcessingResult {
   if (node.type === 'Script') {
-    node.commands.forEach((cmd: any) =>
-      processASTNode(cmd, buffer, undefined, false, isShebangMode, scriptPath),
-    )
-    return
+    let lastExitCode = 0
+    node.commands.forEach((cmd: any) => {
+      const result = processASTNode(
+        cmd,
+        buffer,
+        undefined,
+        false,
+        isShebangMode,
+        scriptPath,
+      )
+      lastExitCode = result.exitCode
+    })
+    return { exitCode: lastExitCode }
   }
 
   if (node.type === 'LogicalExpression') {
@@ -137,7 +150,7 @@ function processASTNode(
       buffer.addLine('<command>')
     }
 
-    processASTNode(
+    const leftResult = processASTNode(
       node.left,
       buffer,
       undefined,
@@ -146,12 +159,12 @@ function processASTNode(
       scriptPath,
     )
 
-    const lastExitCode = global.lastExitCode || 0
+    let finalExitCode = leftResult.exitCode
 
     if (node.op === 'and') {
       buffer.addLine('  <logical-and-operator />')
-      if (lastExitCode === 0) {
-        processASTNode(
+      if (leftResult.exitCode === 0) {
+        const rightResult = processASTNode(
           node.right,
           buffer,
           undefined,
@@ -159,11 +172,12 @@ function processASTNode(
           isShebangMode,
           scriptPath,
         )
+        finalExitCode = rightResult.exitCode
       }
     } else if (node.op === 'or') {
       buffer.addLine('  <logical-or-operator />')
-      if (lastExitCode !== 0) {
-        processASTNode(
+      if (leftResult.exitCode !== 0) {
+        const rightResult = processASTNode(
           node.right,
           buffer,
           undefined,
@@ -171,13 +185,14 @@ function processASTNode(
           isShebangMode,
           scriptPath,
         )
+        finalExitCode = rightResult.exitCode
       }
     }
 
     if (needsWrapper) {
       buffer.addLine('</command>')
     }
-    return
+    return { exitCode: finalExitCode }
   }
 
   if (node.type === 'Pipeline') {
@@ -247,11 +262,10 @@ function processASTNode(
       }
     })
 
-    global.lastExitCode = lastExitCode
     if (!isNested) {
       buffer.addLine('</command>')
     }
-    return
+    return { exitCode: lastExitCode }
   }
 
   if (node.type === 'Command' || node.type === 'SimpleCommand') {
@@ -272,8 +286,7 @@ function processASTNode(
           console.error('Error: fs-to-xml requires a file path')
           process.exit(1)
         }
-        global.lastExitCode = 1
-        return
+        return { exitCode: 1 }
       }
 
       const ext = extname(filePath)
@@ -292,8 +305,7 @@ function processASTNode(
           )
           process.exit(1)
         }
-        global.lastExitCode = 1
-        return
+        return { exitCode: 1 }
       }
 
       try {
@@ -358,7 +370,7 @@ function processASTNode(
           buffer.addLine('    <success code="0" />')
           buffer.addLine('  </fs-to-xml>')
         }
-        global.lastExitCode = 0
+        return { exitCode: 0 }
       } catch (error: any) {
         if (!isShebangMode) {
           buffer.addLine('  <fs-to-xml>')
@@ -372,9 +384,8 @@ function processASTNode(
           console.error(`Error: fs-to-xml failed - ${error.message}`)
           process.exit(1)
         }
-        global.lastExitCode = 1
       }
-      return
+      return { exitCode: 1 }
     }
 
     if (!commandText) {
@@ -406,8 +417,11 @@ function processASTNode(
     }
     buffer.addLine(`  </${commandName}>`)
 
-    global.lastExitCode = result.exitCode
+    return { exitCode: result.exitCode }
   }
+
+  // Default return for any unhandled cases
+  return { exitCode: 0 }
 }
 
 function reconstructCommand(node: any): string {
@@ -523,10 +537,6 @@ function processMarkdownWithCommands(
       buffer.addLine(`${indent}${line}`)
     }
   })
-}
-
-declare global {
-  var lastExitCode: number
 }
 
 function extractAndPromoteTags(

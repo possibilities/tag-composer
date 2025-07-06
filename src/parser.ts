@@ -1,5 +1,6 @@
 import bashParse from 'bash-parser'
 import { validateCommand } from './validate-command.js'
+import { executeCommand } from './execute-command.js'
 
 interface TextLine {
   type: 'text'
@@ -10,11 +11,14 @@ interface CommandLine {
   type: 'command'
   content: string
   ast: any
+  statusCode?: number
+  stdout?: string
+  stderr?: string
 }
 
 type ParsedLine = TextLine | CommandLine
 
-export function parse(input: string): ParsedLine[] {
+export function parse(input: string, execute = false): ParsedLine[] {
   return input
     .split('\n')
     .filter(line => line.length > 0)
@@ -44,11 +48,20 @@ export function parse(input: string): ParsedLine[] {
           )
         }
 
-        return {
+        const commandLine: CommandLine = {
           type: 'command',
           content: line.substring(2),
           ast,
         }
+
+        if (execute) {
+          const result = executeCommand(line.substring(2))
+          commandLine.statusCode = result.statusCode
+          commandLine.stdout = result.stdout
+          commandLine.stderr = result.stderr
+        }
+
+        return commandLine
       }
       return {
         type: 'text',

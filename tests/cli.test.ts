@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { writeFileSync, unlinkSync, chmodSync, mkdirSync, rmSync } from 'fs'
 import { execSync } from 'child_process'
-import { join, dirname, resolve } from 'path'
+import { join, dirname, resolve, basename } from 'path'
 import { tmpdir } from 'os'
 import dedent from 'dedent'
 
@@ -728,48 +728,34 @@ describe('FS to XML', () => {
         cwd: testDir,
       })
 
-      // Build expected output with proper handling of absolute path
-      const absolutePathParts = dirname(join(testDir, 'absolute/path.md'))
-        .split('/')
-        .filter(p => p && p !== '.')
-      let absoluteXml = ''
-      let indent = ''
+      // Extract the test directory name for building the expected output
+      const testDirName = basename(testDir)
 
-      absolutePathParts.forEach(part => {
-        absoluteXml += `${indent}<${part}>\n`
-        indent += '  '
-      })
+      // Build the complete expected output
+      const expected = dedent`
+        <command>
+          <echo>
+            <input>echo "Testing path resolution"</input>
+            <stdout>Testing path resolution</stdout>
+            <success code="0" />
+          </echo>
+        </command>
+        <implicit>
+          Implicit relative content
+        </implicit>
+        <explicit>
+          Explicit relative content
+        </explicit>
+        <tmp>
+          <${testDirName}>
+            <absolute>
+              Absolute path content
+            </absolute>
+          </${testDirName}>
+        </tmp>
+      `
 
-      absoluteXml += `${indent}Absolute path content`
-
-      for (let i = absolutePathParts.length - 1; i >= 0; i--) {
-        absoluteXml += `\n${indent.slice(0, -2)}</${absolutePathParts[i]}>`
-        indent = indent.slice(0, -2)
-      }
-
-      // Verify the structure contains all expected parts
-      expect(output).toContain('<command>')
-      expect(output).toContain('<input>echo "Testing path resolution"</input>')
-      expect(output).toContain('<stdout>Testing path resolution</stdout>')
-      expect(output).toContain('<success code="0" />')
-      expect(output).toContain('</command>')
-
-      expect(output).toContain('<implicit>')
-      expect(output).toContain('  Implicit relative content')
-      expect(output).toContain('</implicit>')
-
-      expect(output).toContain('<explicit>')
-      expect(output).toContain('  Explicit relative content')
-      expect(output).toContain('</explicit>')
-
-      // Verify absolute path content appears in nested structure
-      expect(output).toContain('<absolute>')
-      expect(output).toContain('  Absolute path content')
-      expect(output).toContain('</absolute>')
-
-      // Verify it contains the temp directory structure
-      expect(output).toContain('<tmp>')
-      expect(output).toContain('</tmp>')
+      expect(output.trim()).toBe(expected)
 
       // Cleanup
       try {

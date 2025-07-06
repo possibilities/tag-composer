@@ -48,48 +48,6 @@ describe('FS to XML', () => {
     } catch {}
   })
 
-  it('tests CLI with --no-flatten flag', () => {
-    writeTestFile(
-      'script.sh',
-      dedent`
-      echo first
-      echo second
-      echo "third test"
-    `,
-    )
-
-    const output = execSync(`${cliPath} --no-flatten script.sh`, {
-      encoding: 'utf8',
-      cwd: testDir,
-    })
-
-    const expected = dedent`
-      <command>
-        <echo>
-          <input>echo first</input>
-          <stdout>first</stdout>
-          <success code="0" />
-        </echo>
-      </command>
-      <command>
-        <echo>
-          <input>echo second</input>
-          <stdout>second</stdout>
-          <success code="0" />
-        </echo>
-      </command>
-      <command>
-        <echo>
-          <input>echo "third test"</input>
-          <stdout>third test</stdout>
-          <success code="0" />
-        </echo>
-      </command>
-    `
-
-    expect(output.trim()).toBe(expected)
-  })
-
   it('captures stderr output when commands fail', () => {
     const output = invokeScript(
       dedent(`
@@ -554,48 +512,6 @@ describe('FS to XML', () => {
   })
 
   describe('CLI-specific behavior', () => {
-    it('respects --no-flatten flag', () => {
-      writeTestFile(
-        'script.sh',
-        dedent`
-        echo first
-        echo second
-        echo third
-      `,
-      )
-
-      const output = execSync(`${cliPath} --no-flatten script.sh`, {
-        encoding: 'utf8',
-        cwd: testDir,
-      })
-
-      const expected = dedent`
-        <command>
-          <echo>
-            <input>echo first</input>
-            <stdout>first</stdout>
-            <success code="0" />
-          </echo>
-        </command>
-        <command>
-          <echo>
-            <input>echo second</input>
-            <stdout>second</stdout>
-            <success code="0" />
-          </echo>
-        </command>
-        <command>
-          <echo>
-            <input>echo third</input>
-            <stdout>third</stdout>
-            <success code="0" />
-          </echo>
-        </command>
-      `
-
-      expect(output.trim()).toBe(expected)
-    })
-
     it('exits with error code when script has parse errors', () => {
       writeTestFile('script.sh', 'echo test > output.txt') // Redirections are not supported
 
@@ -756,6 +672,8 @@ describe('FS to XML', () => {
         </docs>
         <rules>
           Rule 1 content
+        </rules>
+        <rules>
           Rule 2 content
         </rules>
       `

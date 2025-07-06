@@ -10,7 +10,6 @@ async function main() {
     .name('fs-to-xml')
     .description('FS to XML CLI')
     .version(packageJson.version)
-    .option('--no-flatten', 'disable flattening')
     .option('--json', 'return JSON')
     .argument('<file>', 'file to interpret')
     .action((file, options) => {

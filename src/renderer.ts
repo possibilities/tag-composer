@@ -1,75 +1,10 @@
 import type { ParsedFsInfo, ParsedNode, Options } from './types.js'
 
-function flattenConsecutiveTags(lines: string[]): string[] {
-  const result: string[] = []
-  let i = 0
-
-  while (i < lines.length) {
-    const currentLine = lines[i]
-    const openTagMatch = currentLine.match(/^(\s*)<([^/>]+)>$/)
-
-    if (openTagMatch) {
-      const indent = openTagMatch[1]
-      const tagName = openTagMatch[2]
-      const collectedContent: string[] = []
-      let j = i
-
-      while (j < lines.length) {
-        const checkLine = lines[j]
-        const checkOpenMatch = checkLine.match(/^(\s*)<([^/>]+)>$/)
-
-        if (
-          checkOpenMatch &&
-          checkOpenMatch[1] === indent &&
-          checkOpenMatch[2] === tagName
-        ) {
-          j++
-          const contentStartIndex = j
-
-          while (
-            j < lines.length &&
-            !lines[j].match(new RegExp(`^${indent}</${tagName}>$`))
-          ) {
-            j++
-          }
-
-          if (j < lines.length) {
-            for (let k = contentStartIndex; k < j; k++) {
-              collectedContent.push(lines[k])
-            }
-            j++
-          } else {
-            break
-          }
-        } else {
-          break
-        }
-      }
-
-      if (collectedContent.length > 0) {
-        result.push(`${indent}<${tagName}>`)
-        collectedContent.forEach(line => result.push(line))
-        result.push(`${indent}</${tagName}>`)
-        i = j
-      } else {
-        result.push(currentLine)
-        i++
-      }
-    } else {
-      result.push(currentLine)
-      i++
-    }
-  }
-
-  return result
-}
-
 export function renderToXml(
   parsedInfo: ParsedFsInfo,
-  options: Options,
+  _options: Options,
 ): string {
   const lines: string[] = []
-  const flatten = options.flatten !== false
 
   function renderNode(node: ParsedNode, indent: string = ''): void {
     if (node.type === 'command') {
@@ -146,9 +81,5 @@ export function renderToXml(
     renderNode(node)
   }
 
-  if (flatten) {
-    return flattenConsecutiveTags(lines).join('\n')
-  } else {
-    return lines.join('\n')
-  }
+  return lines.join('\n')
 }

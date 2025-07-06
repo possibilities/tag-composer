@@ -70,5 +70,5 @@ export interface ASTNode {
 }
 
 export interface Options {
-  flatten?: boolean
+  json?: boolean
 }

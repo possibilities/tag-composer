@@ -1,12 +1,12 @@
 {
-  "name": "fs-to-xml",
+  "name": "tag-composer",
   "version": "0.1.0",
   "author": "Mike Bannister <notimpossiblemike@gmail.com>",
   "license": "MIT",
-  "description": "FS to XML CLI",
+  "description": "Tag Composer CLI",
   "type": "module",
   "bin": {
-    "fs-to-xml": "./dist/cli.js"
+    "tag-composer": "./dist/cli.js"
   },
   "scripts": {
     "build": "tsup",

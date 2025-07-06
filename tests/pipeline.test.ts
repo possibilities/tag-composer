@@ -17,9 +17,9 @@ describe('Full Pipeline Integration', () => {
     const parsed = parseContent(input)
     const validated = validateCommands(parsed)
     const executed = executeCommands(validated)
-    const xml = renderTags(executed)
+    const tags = renderTags(executed)
 
-    expect(xml).toBe(dedent`
+    expect(tags).toBe(dedent`
       <document>
         <text>
           <content>This is a simple script</content>
@@ -45,9 +45,9 @@ describe('Full Pipeline Integration', () => {
     `)
 
     // Verify AST doesn't leak into output
-    expect(xml).not.toContain('ast')
-    expect(xml).not.toContain('Script')
-    expect(xml).not.toContain('Word')
+    expect(tags).not.toContain('ast')
+    expect(tags).not.toContain('Script')
+    expect(tags).not.toContain('Word')
   })
 
   it('should handle error propagation at validation stage', () => {
@@ -75,9 +75,9 @@ describe('Full Pipeline Integration', () => {
     const parsed = parseContent(input)
     const validated = validateCommands(parsed)
     const executed = executeCommands(validated)
-    const xml = renderTags(executed)
+    const tags = renderTags(executed)
 
-    expect(xml).toBe(dedent`
+    expect(tags).toBe(dedent`
       <document>
         <text>
           <content>Testing error handling</content>
@@ -120,25 +120,25 @@ describe('Full Pipeline Integration', () => {
       return renderTags(executed)
     }
 
-    const xml = pipeline(input)
+    const tags = pipeline(input)
 
     // Check structure without asserting on dynamic values
-    expect(xml).toMatch(/<document>/)
-    expect(xml).toMatch(
+    expect(tags).toMatch(/<document>/)
+    expect(tags).toMatch(
       /<text>\s*<content>System Information Report<\/content>\s*<\/text>/,
     )
-    expect(xml).toMatch(
+    expect(tags).toMatch(
       /<command>\s*<content>echo "Hostname: \$\(hostname\)"<\/content>/,
     )
-    expect(xml).toMatch(/<commandName>echo<\/commandName>/)
-    expect(xml).toMatch(/<statusCode>0<\/statusCode>/)
-    expect(xml).toMatch(/<command>\s*<content>pwd<\/content>/)
-    expect(xml).toMatch(/<command>\s*<content>false<\/content>/)
-    expect(xml).toMatch(/<statusCode>1<\/statusCode>/)
-    expect(xml).toMatch(
+    expect(tags).toMatch(/<commandName>echo<\/commandName>/)
+    expect(tags).toMatch(/<statusCode>0<\/statusCode>/)
+    expect(tags).toMatch(/<command>\s*<content>pwd<\/content>/)
+    expect(tags).toMatch(/<command>\s*<content>false<\/content>/)
+    expect(tags).toMatch(/<statusCode>1<\/statusCode>/)
+    expect(tags).toMatch(
       /<text>\s*<content>Report complete\.<\/content>\s*<\/text>/,
     )
-    expect(xml).toMatch(/<\/document>/)
+    expect(tags).toMatch(/<\/document>/)
   })
 
   it('should handle empty input', () => {
@@ -147,9 +147,9 @@ describe('Full Pipeline Integration', () => {
     const parsed = parseContent(input)
     const validated = validateCommands(parsed)
     const executed = executeCommands(validated)
-    const xml = renderTags(executed)
+    const tags = renderTags(executed)
 
-    expect(xml).toBe(dedent`
+    expect(tags).toBe(dedent`
       <document>
       </document>
     `)
@@ -165,9 +165,9 @@ describe('Full Pipeline Integration', () => {
     const parsed = parseContent(input)
     const validated = validateCommands(parsed)
     const executed = executeCommands(validated)
-    const xml = renderTags(executed)
+    const tags = renderTags(executed)
 
-    expect(xml).toBe(dedent`
+    expect(tags).toBe(dedent`
       <document>
         <text>
           <content>This is just text</content>
@@ -191,9 +191,9 @@ describe('Full Pipeline Integration', () => {
     const parsed = parseContent(input)
     const validated = validateCommands(parsed)
     const executed = executeCommands(validated)
-    const xml = renderTags(executed)
+    const tags = renderTags(executed)
 
-    expect(xml).toBe(dedent`
+    expect(tags).toBe(dedent`
       <document>
         <command>
           <content>echo "<tag>Special & chars</tag>"</content>

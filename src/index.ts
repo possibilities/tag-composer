@@ -5,8 +5,8 @@ async function main() {
   const program = new Command()
 
   program
-    .name('fs-to-xml')
-    .description('FS to XML CLI')
+    .name('tag-composer')
+    .description('Tag Composer CLI')
     .version(packageJson.version)
     .action(() => {
       console.log('hello world')

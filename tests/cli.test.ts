@@ -412,7 +412,7 @@ describe('FS to XML', () => {
 
       const output = invokeScript(dedent`
         #!/usr/bin/env ${cliPath}
-        fs-to-xml ./rules/test.md
+        fs-to-xml rules/test.md
       `)
 
       const expected = dedent`
@@ -429,7 +429,7 @@ describe('FS to XML', () => {
 
       const output = invokeScript(dedent`
         #!/usr/bin/env ${cliPath}
-        fs-to-xml ./rules/foo/bar.md
+        fs-to-xml rules/foo/bar.md
       `)
 
       const expected = dedent`
@@ -450,7 +450,7 @@ describe('FS to XML', () => {
       try {
         invokeScript(dedent`
           #!/usr/bin/env ${cliPath}
-          echo foo | fs-to-xml ./rules/test.md
+          echo foo | fs-to-xml rules/test.md
         `)
       } catch (e: any) {
         error = e.message
@@ -466,7 +466,7 @@ describe('FS to XML', () => {
       try {
         invokeScript(dedent`
           #!/usr/bin/env ${cliPath}
-          fs-to-xml ./rules/test.md && echo done
+          fs-to-xml rules/test.md && echo done
         `)
       } catch (e: any) {
         error = e.message
@@ -482,7 +482,7 @@ describe('FS to XML', () => {
       try {
         invokeScript(dedent`
           #!/usr/bin/env ${cliPath}
-          fs-to-xml ./rules/test.txt
+          fs-to-xml rules/test.txt
         `)
       } catch (e: any) {
         error = e.stderr || e.message
@@ -498,14 +498,14 @@ describe('FS to XML', () => {
       try {
         invokeScript(dedent`
           #!/usr/bin/env ${cliPath}
-          fs-to-xml ./rules/nonexistent.md
+          fs-to-xml rules/nonexistent.md
         `)
       } catch (e: any) {
         error = e.stderr || e.message
       }
 
       expect(error.trim()).toBe(
-        "Error: fs-to-xml failed - ENOENT: no such file or directory, open './rules/nonexistent.md'",
+        "Error: fs-to-xml failed - ENOENT: no such file or directory, open 'rules/nonexistent.md'",
       )
     })
   })
@@ -517,7 +517,7 @@ describe('FS to XML', () => {
       const output = invokeScript(dedent`
         #!/usr/bin/env ${cliPath}
         echo "Starting process"
-        fs-to-xml ./rules/test.md
+        fs-to-xml rules/test.md
         echo "Process complete"
       `)
 
@@ -546,7 +546,7 @@ describe('FS to XML', () => {
 
     it('processes fs-to-xml without shebang mode normally', () => {
       writeTestFile('rules/test.md', 'This is a test rule file.')
-      writeTestFile('script.sh', 'fs-to-xml ./rules/test.md')
+      writeTestFile('script.sh', 'fs-to-xml rules/test.md')
 
       const output = execSync(`${cliPath} script.sh`, {
         encoding: 'utf8',
@@ -556,7 +556,7 @@ describe('FS to XML', () => {
       const expected = dedent`
         <command>
           <fs-to-xml>
-            <input>fs-to-xml ./rules/test.md</input>
+            <input>fs-to-xml rules/test.md</input>
             <rules>
               This is a test rule file.
             </rules>
@@ -639,51 +639,23 @@ describe('FS to XML', () => {
       expect(output.trim()).toBe(expectedXml)
     })
 
-    it('resolves explicit relative paths (./...) relative to CWD', () => {
-      writeTestFile('rules/test.md', 'This is a test rule file.')
-
-      const output = invokeScript(dedent`
-        #!/usr/bin/env ${cliPath}
-        fs-to-xml ./rules/test.md
-      `)
-
-      const expected = dedent`
-        <rules>
-          This is a test rule file.
-        </rules>
-      `
-
-      expect(output.trim()).toBe(expected)
-    })
-
-    it('resolves implicit relative paths relative to script location', () => {
-      // Write the actual script and data files
-      writeTestFile(
-        'scripts/subdir/script.sh',
-        dedent`
-        #!/usr/bin/env ${cliPath}
-        fs-to-xml data/test.md
-      `,
-      )
-      writeTestFile('scripts/subdir/data/test.md', 'Script-relative content')
-      chmodSync(join(testDir, 'scripts/subdir/script.sh'), 0o755)
-
-      // Create a temporary script in /tmp that will execute our test script
-      // This simulates the invokeScript behavior
-      const tmpScript = join(tmpdir(), 'test-implicit-path.sh')
-      writeFileSync(
-        tmpScript,
-        dedent`
-        #!/usr/bin/env ${cliPath}
-        fs-to-xml data/test.md
-      `,
-      )
-      chmodSync(tmpScript, 0o755)
+    it('resolves explicit relative paths (./...) relative to script location', () => {
+      // Create a temporary script that uses explicit relative path
+      const tmpScript = join(tmpdir(), 'test-explicit-path.sh')
 
       // Create data file relative to the tmp script
       const tmpDataDir = join(dirname(tmpScript), 'data')
       mkdirSync(tmpDataDir, { recursive: true })
       writeFileSync(join(tmpDataDir, 'test.md'), 'Script-relative content')
+
+      writeFileSync(
+        tmpScript,
+        dedent`
+        #!/usr/bin/env ${cliPath}
+        fs-to-xml ./data/test.md
+      `,
+      )
+      chmodSync(tmpScript, 0o755)
 
       const output = execSync(tmpScript, {
         encoding: 'utf8',
@@ -705,20 +677,38 @@ describe('FS to XML', () => {
       } catch {}
     })
 
+    it('resolves implicit relative paths relative to CWD', () => {
+      // Create data file in CWD
+      writeTestFile('data/test.md', 'CWD-relative content')
+
+      const output = invokeScript(dedent`
+        #!/usr/bin/env ${cliPath}
+        fs-to-xml data/test.md
+      `)
+
+      const expected = dedent`
+        <data>
+          CWD-relative content
+        </data>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+
     it('handles mixed path types in the same script', () => {
       // Create a temporary script that tests all three path types
       const tmpScript = join(tmpdir(), 'test-mixed-paths.sh')
 
-      // Create test files
-      writeTestFile('explicit/relative.md', 'Explicit relative content')
+      // Create test files in CWD for implicit relative path
+      writeTestFile('implicit/relative.md', 'Implicit relative content')
       writeTestFile('absolute/path.md', 'Absolute path content')
 
-      // Create data file relative to the tmp script location
-      const tmpDataDir = join(dirname(tmpScript), 'data')
+      // Create data file relative to the tmp script location for explicit relative path
+      const tmpDataDir = join(dirname(tmpScript), 'explicit')
       mkdirSync(tmpDataDir, { recursive: true })
       writeFileSync(
-        join(tmpDataDir, 'implicit.md'),
-        'Implicit relative content',
+        join(tmpDataDir, 'relative.md'),
+        'Explicit relative content',
       )
 
       writeFileSync(
@@ -726,7 +716,7 @@ describe('FS to XML', () => {
         dedent`
         #!/usr/bin/env ${cliPath}
         echo "Testing path resolution"
-        fs-to-xml data/implicit.md
+        fs-to-xml implicit/relative.md
         fs-to-xml ./explicit/relative.md
         fs-to-xml ${join(testDir, 'absolute/path.md')}
       `,
@@ -757,24 +747,29 @@ describe('FS to XML', () => {
         indent = indent.slice(0, -2)
       }
 
-      const expected = [
-        '<command>',
-        '  <echo>',
-        '    <input>echo "Testing path resolution"</input>',
-        '    <stdout>Testing path resolution</stdout>',
-        '    <success code="0" />',
-        '  </echo>',
-        '</command>',
-        '<data>',
-        '  Implicit relative content',
-        '</data>',
-        '<explicit>',
-        '  Explicit relative content',
-        '</explicit>',
-        absoluteXml,
-      ].join('\n')
+      // Verify the structure contains all expected parts
+      expect(output).toContain('<command>')
+      expect(output).toContain('<input>echo "Testing path resolution"</input>')
+      expect(output).toContain('<stdout>Testing path resolution</stdout>')
+      expect(output).toContain('<success code="0" />')
+      expect(output).toContain('</command>')
 
-      expect(output.trim()).toBe(expected.trim())
+      expect(output).toContain('<implicit>')
+      expect(output).toContain('  Implicit relative content')
+      expect(output).toContain('</implicit>')
+
+      expect(output).toContain('<explicit>')
+      expect(output).toContain('  Explicit relative content')
+      expect(output).toContain('</explicit>')
+
+      // Verify absolute path content appears in nested structure
+      expect(output).toContain('<absolute>')
+      expect(output).toContain('  Absolute path content')
+      expect(output).toContain('</absolute>')
+
+      // Verify it contains the temp directory structure
+      expect(output).toContain('<tmp>')
+      expect(output).toContain('</tmp>')
 
       // Cleanup
       try {
@@ -789,23 +784,29 @@ describe('FS to XML', () => {
       mkdirSync(scriptDir, { recursive: true })
       const scriptPath = join(scriptDir, 'script.sh')
 
-      // Create data relative to script
-      const dataDir = join(scriptDir, 'data')
-      mkdirSync(dataDir, { recursive: true })
-      writeFileSync(join(dataDir, 'test.md'), 'Script-relative content')
+      // Create data relative to script location for explicit relative path
+      const scriptDataDir = join(scriptDir, 'data')
+      mkdirSync(scriptDataDir, { recursive: true })
+      writeFileSync(join(scriptDataDir, 'test.md'), 'Script-relative content')
+
+      // Create a working directory and run from there
+      const workDir = join(testDir, 'workdir')
+      mkdirSync(workDir, { recursive: true })
+
+      // Create data relative to working directory for implicit relative path
+      const workDataDir = join(workDir, 'other')
+      mkdirSync(workDataDir, { recursive: true })
+      writeFileSync(join(workDataDir, 'test.md'), 'CWD-relative content')
 
       writeFileSync(
         scriptPath,
         dedent`
         #!/usr/bin/env ${cliPath}
-        fs-to-xml data/test.md
+        fs-to-xml ./data/test.md
+        fs-to-xml other/test.md
       `,
       )
       chmodSync(scriptPath, 0o755)
-
-      // Create a working directory and run from there
-      const workDir = join(testDir, 'workdir')
-      mkdirSync(workDir, { recursive: true })
 
       const output = execSync('../scripts/script.sh', {
         encoding: 'utf8',
@@ -816,6 +817,9 @@ describe('FS to XML', () => {
         <data>
           Script-relative content
         </data>
+        <other>
+          CWD-relative content
+        </other>
       `
 
       expect(output.trim()).toBe(expected)

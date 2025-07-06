@@ -189,9 +189,9 @@ function processASTNode(
           if (filePath.startsWith('/')) {
             resolvedPath = filePath
           } else if (filePath.startsWith('.')) {
-            resolvedPath = filePath
-          } else {
             resolvedPath = join(dirname(scriptPath), filePath)
+          } else {
+            resolvedPath = filePath
           }
         }
 

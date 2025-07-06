@@ -8,13 +8,20 @@ async function main() {
 
   program
     .name('fs-to-xml')
-    .description('FS to XML CLI - A simple shebang interpreter')
+    .description('FS to XML CLI')
     .version(packageJson.version)
-    .option('--no-flatten', 'disable flattening of consecutive same-named tags')
-    .argument('<file>', 'script file to process')
+    .option('--no-flatten', 'disable flattening')
+    .option('--json', 'return JSON')
+    .argument('<file>', 'file to interpret')
     .action((file, options) => {
       try {
         const parsedFsInfo = parseFs(file, options)
+
+        if (options.json) {
+          console.log(JSON.stringify(parsedFsInfo, null, 2))
+          process.exit(0)
+        }
+
         const xmlString = renderToXml(parsedFsInfo, options)
         console.log(xmlString)
       } catch (error) {

@@ -34,7 +34,7 @@ describe('FS to XML', () => {
         <echo>
           <input>echo "foo bar"</input>
           <stdout>foo bar</stdout>
-          <exit>0</exit>
+          <success code="0" />
         </echo>
       </command>
     `
@@ -55,7 +55,7 @@ describe('FS to XML', () => {
         <echo>
           <input>echo hello</input>
           <stdout>hello</stdout>
-          <exit>0</exit>
+          <success code="0" />
         </echo>
       </command>
     `
@@ -76,21 +76,21 @@ describe('FS to XML', () => {
         <echo>
           <input>echo first</input>
           <stdout>first</stdout>
-          <exit>0</exit>
+          <success code="0" />
         </echo>
       </command>
       <command>
         <echo>
           <input>echo second</input>
           <stdout>second</stdout>
-          <exit>0</exit>
+          <success code="0" />
         </echo>
       </command>
       <command>
         <echo>
           <input>echo "third test"</input>
           <stdout>third test</stdout>
-          <exit>0</exit>
+          <success code="0" />
         </echo>
       </command>
     `
@@ -111,14 +111,14 @@ describe('FS to XML', () => {
         <echo>
           <input>echo first</input>
           <stdout>first</stdout>
-          <exit>0</exit>
+          <success code="0" />
         </echo>
       </command>
       <command>
         <echo>
           <input>echo second</input>
           <stdout>second</stdout>
-          <exit>0</exit>
+          <success code="0" />
         </echo>
       </command>
     `
@@ -137,7 +137,7 @@ describe('FS to XML', () => {
         <echo>
           <input>echo</input>
           <stdout />
-          <exit>0</exit>
+          <success code="0" />
         </echo>
       </command>
     `
@@ -156,7 +156,7 @@ describe('FS to XML', () => {
         <echo>
           <input>echo foo bar baz</input>
           <stdout>foo bar baz</stdout>
-          <exit>0</exit>
+          <success code="0" />
         </echo>
       </command>
     `
@@ -175,13 +175,13 @@ describe('FS to XML', () => {
         <echo>
           <input>echo foo</input>
           <stdout>foo</stdout>
-          <exit>0</exit>
+          <success code="0" />
         </echo>
         <logical-and-operator />
         <echo>
           <input>echo bar</input>
           <stdout>bar</stdout>
-          <exit>0</exit>
+          <success code="0" />
         </echo>
       </command>
     `
@@ -200,19 +200,19 @@ describe('FS to XML', () => {
         <echo>
           <input>echo foo</input>
           <stdout>foo</stdout>
-          <exit>0</exit>
+          <success code="0" />
         </echo>
         <logical-and-operator />
         <echo>
           <input>echo bar</input>
           <stdout>bar</stdout>
-          <exit>0</exit>
+          <success code="0" />
         </echo>
         <logical-and-operator />
         <echo>
           <input>echo baz</input>
           <stdout>baz</stdout>
-          <exit>0</exit>
+          <success code="0" />
         </echo>
       </command>
     `
@@ -231,7 +231,7 @@ describe('FS to XML', () => {
         <echo>
           <input>echo foo</input>
           <stdout>foo</stdout>
-          <exit>0</exit>
+          <success code="0" />
         </echo>
         <logical-or-operator />
       </command>
@@ -251,13 +251,13 @@ describe('FS to XML', () => {
         <false>
           <input>false</input>
           <stdout />
-          <exit>1</exit>
+          <failure code="1" />
         </false>
         <logical-or-operator />
         <echo>
           <input>echo bar</input>
           <stdout>bar</stdout>
-          <exit>0</exit>
+          <success code="0" />
         </echo>
       </command>
     `
@@ -276,7 +276,7 @@ describe('FS to XML', () => {
         <echo>
           <input>echo foo</input>
           <stdout>foo</stdout>
-          <exit>0</exit>
+          <success code="0" />
         </echo>
         <logical-or-operator />
         <logical-or-operator />
@@ -296,13 +296,13 @@ describe('FS to XML', () => {
       <command>
         <echo>
           <input>echo foo</input>
-          <exit>0</exit>
+          <success code="0" />
         </echo>
         <pipe-operator />
         <grep>
           <input>grep foo</input>
           <stdout>foo</stdout>
-          <exit>0</exit>
+          <success code="0" />
         </grep>
       </command>
     `
@@ -322,7 +322,7 @@ describe('FS to XML', () => {
           <input>./test-helpers/error-generator.sh --exit-code 2 --stderr "Command failed"</input>
           <stdout />
           <stderr>Command failed</stderr>
-          <exit>2</exit>
+          <failure code="2" />
         </./test-helpers/error-generator.sh>
       </command>
     `
@@ -340,14 +340,14 @@ describe('FS to XML', () => {
       <command>
         <echo>
           <input>echo test</input>
-          <exit>0</exit>
+          <success code="0" />
         </echo>
         <pipe-operator />
         <./test-helpers/error-generator.sh>
           <input>./test-helpers/error-generator.sh --exit-code 2 --stderr "Invalid option" --stdout filtered</input>
           <stdout>filtered</stdout>
           <stderr>Invalid option</stderr>
-          <exit>2</exit>
+          <failure code="2" />
         </./test-helpers/error-generator.sh>
       </command>
     `
@@ -367,7 +367,7 @@ describe('FS to XML', () => {
           <input>./test-helpers/error-generator.sh --exit-code 42 --stdout "Normal output" --stderr "Error output"</input>
           <stdout>Normal output</stdout>
           <stderr>Error output</stderr>
-          <exit>42</exit>
+          <failure code="42" />
         </./test-helpers/error-generator.sh>
       </command>
     `

@@ -88,7 +88,11 @@ function processASTNode(
           console.log(`    <stderr>${trimmedStderr}</stderr>`)
         }
 
-        console.log(`    <exit>${lastExitCode}</exit>`)
+        if (lastExitCode === 0) {
+          console.log(`    <success code="0" />`)
+        } else {
+          console.log(`    <failure code="${lastExitCode}" />`)
+        }
         console.log(`  </${commandName}>`)
       } else {
         console.log('  <pipe-operator />')
@@ -116,7 +120,11 @@ function processASTNode(
           console.log(`    <stderr>${trimmedStderr}</stderr>`)
         }
 
-        console.log(`    <exit>${lastExitCode}</exit>`)
+        if (lastExitCode === 0) {
+          console.log(`    <success code="0" />`)
+        } else {
+          console.log(`    <failure code="${lastExitCode}" />`)
+        }
         console.log(`  </${commandName}>`)
       }
     })
@@ -151,7 +159,11 @@ function processASTNode(
       console.log(`    <stderr>${trimmedStderr}</stderr>`)
     }
 
-    console.log(`    <exit>${result.exitCode}</exit>`)
+    if (result.exitCode === 0) {
+      console.log(`    <success code="0" />`)
+    } else {
+      console.log(`    <failure code="${result.exitCode}" />`)
+    }
     console.log(`  </${commandName}>`)
 
     global.lastExitCode = result.exitCode

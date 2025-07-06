@@ -1,9 +1,29 @@
-import { describe, it, expect } from 'vitest'
-import { writeFileSync, unlinkSync, chmodSync } from 'fs'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { writeFileSync, unlinkSync, chmodSync, mkdirSync, rmSync } from 'fs'
 import { execSync } from 'child_process'
-import { join } from 'path'
+import { join, dirname, resolve } from 'path'
 import { tmpdir } from 'os'
 import dedent from 'dedent'
+
+// Get absolute paths
+const cliPath = resolve('./dist/cli.js')
+const errorGeneratorPath = resolve('./test-helpers/error-generator.sh')
+
+// Create a unique test directory for each test run
+const testDir = join(
+  tmpdir(),
+  `fs-to-xml-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+)
+
+const writeTestFile = (
+  path: string,
+  content: string = 'This is a test rule file.',
+): void => {
+  const fullPath = join(testDir, path)
+  const dir = dirname(fullPath)
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(fullPath, content)
+}
 
 const invokeScript = (scriptContent: string): string => {
   const tmpFile = join(
@@ -14,7 +34,7 @@ const invokeScript = (scriptContent: string): string => {
   try {
     writeFileSync(tmpFile, scriptContent.trim())
     chmodSync(tmpFile, 0o755)
-    return execSync(tmpFile, { encoding: 'utf8' })
+    return execSync(tmpFile, { encoding: 'utf8', cwd: testDir })
   } finally {
     try {
       unlinkSync(tmpFile)
@@ -23,9 +43,19 @@ const invokeScript = (scriptContent: string): string => {
 }
 
 describe('FS to XML', () => {
+  beforeEach(() => {
+    mkdirSync(testDir, { recursive: true })
+  })
+
+  afterEach(() => {
+    try {
+      rmSync(testDir, { recursive: true, force: true })
+    } catch {}
+  })
+
   it('outputs simple echo command as XML', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env ${cliPath}
       echo "foo bar"
     `)
 
@@ -44,7 +74,7 @@ describe('FS to XML', () => {
 
   it('skips comment lines', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env ${cliPath}
       # This is a comment
       echo hello
       # Another comment
@@ -65,7 +95,7 @@ describe('FS to XML', () => {
 
   it('outputs multiple echo commands', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env ${cliPath}
       echo first
       echo second
       echo "third test"
@@ -100,7 +130,7 @@ describe('FS to XML', () => {
 
   it('handles empty lines', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env ${cliPath}
       echo first
       
       echo second
@@ -128,7 +158,7 @@ describe('FS to XML', () => {
 
   it('handles echo with no arguments', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env ${cliPath}
       echo
     `)
 
@@ -147,7 +177,7 @@ describe('FS to XML', () => {
 
   it('handles echo with multiple arguments', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env ${cliPath}
       echo foo bar baz
     `)
 
@@ -166,7 +196,7 @@ describe('FS to XML', () => {
 
   it('outputs commands with logical AND operator', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env ${cliPath}
       echo foo && echo bar
     `)
 
@@ -191,7 +221,7 @@ describe('FS to XML', () => {
 
   it('outputs multiple commands with logical AND operators', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env ${cliPath}
       echo foo && echo bar && echo baz
     `)
 
@@ -222,7 +252,7 @@ describe('FS to XML', () => {
 
   it('outputs commands with logical OR operator', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env ${cliPath}
       echo foo || echo bar
     `)
 
@@ -242,7 +272,7 @@ describe('FS to XML', () => {
 
   it('executes second command when first fails with OR operator', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env ${cliPath}
       false || echo bar
     `)
 
@@ -267,7 +297,7 @@ describe('FS to XML', () => {
 
   it('handles multiple OR operators with first command succeeding', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env ${cliPath}
       echo foo || exit 1 || echo bar
     `)
 
@@ -288,7 +318,7 @@ describe('FS to XML', () => {
 
   it('handles pipe operations', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env ${cliPath}
       echo foo | grep foo
     `)
 
@@ -311,32 +341,36 @@ describe('FS to XML', () => {
   })
 
   it('captures stderr output when commands fail', () => {
-    const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
-      ./test-helpers/error-generator.sh --exit-code 2 --stderr "Command failed"
-    `)
+    const output = invokeScript(
+      dedent(`
+      #!/usr/bin/env ${cliPath}
+      ${errorGeneratorPath} --exit-code 2 --stderr "Command failed"
+    `),
+    )
 
-    const expected = dedent`
+    const expected = dedent(`
       <command>
         <error-generator.sh>
-          <input>./test-helpers/error-generator.sh --exit-code 2 --stderr "Command failed"</input>
+          <input>${errorGeneratorPath} --exit-code 2 --stderr "Command failed"</input>
           <stdout />
           <stderr>Command failed</stderr>
           <failure code="2" />
         </error-generator.sh>
       </command>
-    `
+    `)
 
     expect(output.trim()).toBe(expected)
   })
 
   it('shows stderr in pipe operations', () => {
-    const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
-      echo test | ./test-helpers/error-generator.sh --exit-code 2 --stderr "Invalid option" --stdout "filtered"
-    `)
+    const output = invokeScript(
+      dedent(`
+      #!/usr/bin/env ${cliPath}
+      echo test | ${errorGeneratorPath} --exit-code 2 --stderr "Invalid option" --stdout "filtered"
+    `),
+    )
 
-    const expected = dedent`
+    const expected = dedent(`
       <command>
         <echo>
           <input>echo test</input>
@@ -344,55 +378,55 @@ describe('FS to XML', () => {
         </echo>
         <pipe-operator />
         <error-generator.sh>
-          <input>./test-helpers/error-generator.sh --exit-code 2 --stderr "Invalid option" --stdout filtered</input>
+          <input>${errorGeneratorPath} --exit-code 2 --stderr "Invalid option" --stdout filtered</input>
           <stdout>filtered</stdout>
           <stderr>Invalid option</stderr>
           <failure code="2" />
         </error-generator.sh>
       </command>
-    `
+    `)
 
     expect(output.trim()).toBe(expected)
   })
 
   it('shows both stdout and stderr with custom exit code', () => {
-    const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
-      ./test-helpers/error-generator.sh --exit-code 42 --stdout "Normal output" --stderr "Error output"
-    `)
+    const output = invokeScript(
+      dedent(`
+      #!/usr/bin/env ${cliPath}
+      ${errorGeneratorPath} --exit-code 42 --stdout "Normal output" --stderr "Error output"
+    `),
+    )
 
-    const expected = dedent`
+    const expected = dedent(`
       <command>
         <error-generator.sh>
-          <input>./test-helpers/error-generator.sh --exit-code 42 --stdout "Normal output" --stderr "Error output"</input>
+          <input>${errorGeneratorPath} --exit-code 42 --stdout "Normal output" --stderr "Error output"</input>
           <stdout>Normal output</stdout>
           <stderr>Error output</stderr>
           <failure code="42" />
         </error-generator.sh>
       </command>
-    `
+    `)
 
     expect(output.trim()).toBe(expected)
   })
 
   describe('fs-to-xml special command', () => {
     it('processes markdown file with single directory', () => {
+      writeTestFile('rules/test.md')
+
       const output = invokeScript(dedent`
-        #!/usr/bin/env ./dist/cli.js
-        fs-to-xml tests/fixtures/rules/test.md
+        #!/usr/bin/env ${cliPath}
+        fs-to-xml rules/test.md
       `)
 
       const expected = dedent`
         <command>
           <fs-to-xml>
-            <input>fs-to-xml tests/fixtures/rules/test.md</input>
-            <tests>
-              <fixtures>
-                <rules>
-                  This is a test rule file.
-                </rules>
-              </fixtures>
-            </tests>
+            <input>fs-to-xml rules/test.md</input>
+            <rules>
+              This is a test rule file.
+            </rules>
             <success code="0" />
           </fs-to-xml>
         </command>
@@ -402,24 +436,22 @@ describe('FS to XML', () => {
     })
 
     it('processes markdown file with nested directories', () => {
+      writeTestFile('rules/foo/bar.md', 'This is a nested rule file.')
+
       const output = invokeScript(dedent`
-        #!/usr/bin/env ./dist/cli.js
-        fs-to-xml tests/fixtures/rules/foo/bar.md
+        #!/usr/bin/env ${cliPath}
+        fs-to-xml rules/foo/bar.md
       `)
 
       const expected = dedent`
         <command>
           <fs-to-xml>
-            <input>fs-to-xml tests/fixtures/rules/foo/bar.md</input>
-            <tests>
-              <fixtures>
-                <rules>
-                  <foo>
-                    This is a nested rule file.
-                  </foo>
-                </rules>
-              </fixtures>
-            </tests>
+            <input>fs-to-xml rules/foo/bar.md</input>
+            <rules>
+              <foo>
+                This is a nested rule file.
+              </foo>
+            </rules>
             <success code="0" />
           </fs-to-xml>
         </command>
@@ -429,11 +461,13 @@ describe('FS to XML', () => {
     })
 
     it('fails when fs-to-xml is used in a pipe', () => {
+      writeTestFile('rules/test.md')
+
       let error = ''
       try {
         invokeScript(dedent`
-          #!/usr/bin/env ./dist/cli.js
-          echo foo | fs-to-xml tests/fixtures/rules/test.md
+          #!/usr/bin/env ${cliPath}
+          echo foo | fs-to-xml rules/test.md
         `)
       } catch (e: any) {
         error = e.message
@@ -443,11 +477,13 @@ describe('FS to XML', () => {
     })
 
     it('fails when fs-to-xml is used with logical operators', () => {
+      writeTestFile('rules/test.md')
+
       let error = ''
       try {
         invokeScript(dedent`
-          #!/usr/bin/env ./dist/cli.js
-          fs-to-xml tests/fixtures/rules/test.md && echo done
+          #!/usr/bin/env ${cliPath}
+          fs-to-xml rules/test.md && echo done
         `)
       } catch (e: any) {
         error = e.message
@@ -457,15 +493,17 @@ describe('FS to XML', () => {
     })
 
     it('handles fs-to-xml with non-markdown file', () => {
+      writeTestFile('rules/test.txt', 'This is a text file.')
+
       const output = invokeScript(dedent`
-        #!/usr/bin/env ./dist/cli.js
-        fs-to-xml tests/fixtures/rules/test.txt
+        #!/usr/bin/env ${cliPath}
+        fs-to-xml rules/test.txt
       `)
 
       const expected = dedent`
         <command>
           <fs-to-xml>
-            <input>fs-to-xml tests/fixtures/rules/test.txt</input>
+            <input>fs-to-xml rules/test.txt</input>
             <stderr>Error: fs-to-xml only supports .md files, got .txt</stderr>
             <failure code="1" />
           </fs-to-xml>
@@ -477,15 +515,15 @@ describe('FS to XML', () => {
 
     it('handles fs-to-xml with missing file', () => {
       const output = invokeScript(dedent`
-        #!/usr/bin/env ./dist/cli.js
-        fs-to-xml tests/fixtures/rules/nonexistent.md
+        #!/usr/bin/env ${cliPath}
+        fs-to-xml rules/nonexistent.md
       `)
 
       const expected = dedent`
         <command>
           <fs-to-xml>
-            <input>fs-to-xml tests/fixtures/rules/nonexistent.md</input>
-            <stderr>Error reading file: ENOENT: no such file or directory, open 'tests/fixtures/rules/nonexistent.md'</stderr>
+            <input>fs-to-xml rules/nonexistent.md</input>
+            <stderr>Error reading file: ENOENT: no such file or directory, open 'rules/nonexistent.md'</stderr>
             <failure code="1" />
           </fs-to-xml>
         </command>
@@ -497,38 +535,36 @@ describe('FS to XML', () => {
 
   describe('Direct markdown file processing', () => {
     it('processes markdown file directly', () => {
-      const output = execSync('./dist/cli.js tests/fixtures/rules/test.md', {
+      writeTestFile('rules/test.md')
+
+      const output = execSync(`${cliPath} rules/test.md`, {
         encoding: 'utf8',
+        cwd: testDir,
       })
 
       const expected = dedent`
-        <tests>
-          <fixtures>
-            <rules>
-              This is a test rule file.
-            </rules>
-          </fixtures>
-        </tests>
+        <rules>
+          This is a test rule file.
+        </rules>
       `
 
       expect(output.trim()).toBe(expected)
     })
 
     it('processes nested markdown file directly', () => {
-      const output = execSync('./dist/cli.js tests/fixtures/rules/foo/bar.md', {
+      writeTestFile('rules/foo/bar.md', 'This is a nested rule file.')
+
+      const output = execSync(`${cliPath} rules/foo/bar.md`, {
         encoding: 'utf8',
+        cwd: testDir,
       })
 
       const expected = dedent`
-        <tests>
-          <fixtures>
-            <rules>
-              <foo>
-                This is a nested rule file.
-              </foo>
-            </rules>
-          </fixtures>
-        </tests>
+        <rules>
+          <foo>
+            This is a nested rule file.
+          </foo>
+        </rules>
       `
 
       expect(output.trim()).toBe(expected)

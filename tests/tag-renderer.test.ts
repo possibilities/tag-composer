@@ -4,6 +4,115 @@ import { renderToTags } from '../src/tag-renderer'
 
 describe('renderToTags', () => {
   describe('generic rendering', () => {
+    it('should render nested children', () => {
+      const lines = [
+        {
+          type: 'section',
+          title: 'Main Section',
+          children: [
+            {
+              type: 'paragraph',
+              content: 'This is a paragraph',
+            },
+            {
+              type: 'list',
+              ordered: true,
+              children: [
+                {
+                  type: 'item',
+                  content: 'First item',
+                },
+                {
+                  type: 'item',
+                  content: 'Second item',
+                },
+              ],
+            },
+          ],
+        },
+      ]
+
+      const result = renderToTags(lines)
+
+      expect(result).toBe(dedent`
+        <document>
+          <section>
+            <title>Main Section</title>
+            <paragraph>
+              <content>This is a paragraph</content>
+            </paragraph>
+            <list>
+              <ordered>true</ordered>
+              <item>
+                <content>First item</content>
+              </item>
+              <item>
+                <content>Second item</content>
+              </item>
+            </list>
+          </section>
+        </document>
+      `)
+    })
+
+    it('should handle deeply nested structures', () => {
+      const lines = [
+        {
+          type: 'root',
+          name: 'Level 1',
+          children: [
+            {
+              type: 'branch',
+              name: 'Level 2',
+              children: [
+                {
+                  type: 'leaf',
+                  name: 'Level 3',
+                  value: 'deep value',
+                },
+              ],
+            },
+          ],
+        },
+      ]
+
+      const result = renderToTags(lines)
+
+      expect(result).toBe(dedent`
+        <document>
+          <root>
+            <name>Level 1</name>
+            <branch>
+              <name>Level 2</name>
+              <leaf>
+                <name>Level 3</name>
+                <value>deep value</value>
+              </leaf>
+            </branch>
+          </root>
+        </document>
+      `)
+    })
+
+    it('should handle empty children array', () => {
+      const lines = [
+        {
+          type: 'container',
+          name: 'Empty Container',
+          children: [],
+        },
+      ]
+
+      const result = renderToTags(lines)
+
+      expect(result).toBe(dedent`
+        <document>
+          <container>
+            <name>Empty Container</name>
+          </container>
+        </document>
+      `)
+    })
     it('should render any object with type field as wrapper tag', () => {
       const lines = [
         {
@@ -101,6 +210,43 @@ describe('renderToTags', () => {
             <item>
                 <value>test</value>
             </item>
+        </document>
+      `)
+    })
+
+    it('should handle nested structures with custom indentation', () => {
+      const lines = [
+        {
+          type: 'parent',
+          id: 1,
+          children: [
+            {
+              type: 'child',
+              id: 2,
+              children: [
+                {
+                  type: 'grandchild',
+                  id: 3,
+                },
+              ],
+            },
+          ],
+        },
+      ]
+
+      const result = renderToTags(lines, { indent: '\t' })
+
+      expect(result).toBe(dedent`
+        <document>
+        	<parent>
+        		<id>1</id>
+        		<child>
+        			<id>2</id>
+        			<grandchild>
+        				<id>3</id>
+        			</grandchild>
+        		</child>
+        	</parent>
         </document>
       `)
     })

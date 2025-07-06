@@ -1,5 +1,6 @@
 interface ParsedLine {
   type: string
+  children?: ParsedLine[]
   [key: string]: any
 }
 
@@ -9,6 +10,33 @@ interface RenderOptions {
 
 function renderIndent(level: number, indent: string): string {
   return indent.repeat(level)
+}
+
+function renderLine(line: ParsedLine, level: number, indent: string): string[] {
+  const output: string[] = []
+  const { type, children, ...rest } = line
+
+  output.push(`${renderIndent(level, indent)}<${type}>`)
+
+  for (const [key, value] of Object.entries(rest)) {
+    if (value === '') {
+      output.push(`${renderIndent(level + 1, indent)}<${key} />`)
+    } else {
+      output.push(
+        `${renderIndent(level + 1, indent)}<${key}>${value.toString().trimEnd()}</${key}>`,
+      )
+    }
+  }
+
+  if (children && Array.isArray(children)) {
+    for (const child of children) {
+      output.push(...renderLine(child, level + 1, indent))
+    }
+  }
+
+  output.push(`${renderIndent(level, indent)}</${type}>`)
+
+  return output
 }
 
 export function renderToTags(
@@ -21,21 +49,7 @@ export function renderToTags(
   output.push('<document>')
 
   for (const line of lines) {
-    const { type, ...rest } = line
-
-    output.push(`${renderIndent(1, indent)}<${type}>`)
-
-    for (const [key, value] of Object.entries(rest)) {
-      if (value === '') {
-        output.push(`${renderIndent(2, indent)}<${key} />`)
-      } else {
-        output.push(
-          `${renderIndent(2, indent)}<${key}>${value.toString().trimEnd()}</${key}>`,
-        )
-      }
-    }
-
-    output.push(`${renderIndent(1, indent)}</${type}>`)
+    output.push(...renderLine(line, 1, indent))
   }
 
   output.push('</document>')

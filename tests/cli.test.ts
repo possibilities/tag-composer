@@ -957,6 +957,340 @@ describe('FS to XML', () => {
     })
   })
 
+  describe('Markdown with !! commands', () => {
+    it('processes !! commands in markdown files in shebang mode', () => {
+      const markdownContent = dedent`
+        This is a regular line
+        !! echo "This is from a command"
+        Another regular line
+      `
+      writeTestFile('rules/test.md', markdownContent)
+
+      const output = invokeScript(dedent`
+        #!/usr/bin/env ${cliPath}
+        fs-to-xml rules/test.md
+      `)
+
+      const expected = dedent`
+        <rules>
+          This is a regular line
+          <command>
+            <echo>
+              <input>echo "This is from a command"</input>
+              <stdout>This is from a command</stdout>
+              <success code="0" />
+            </echo>
+          </command>
+          Another regular line
+        </rules>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+
+    it('processes multiple !! commands in markdown', () => {
+      const markdownContent = dedent`
+        First line
+        !! echo "Command 1"
+        Middle line
+        !! echo "Command 2"
+        Last line
+      `
+      writeTestFile('docs/test.md', markdownContent)
+
+      const output = invokeScript(dedent`
+        #!/usr/bin/env ${cliPath}
+        fs-to-xml docs/test.md
+      `)
+
+      const expected = dedent`
+        <docs>
+          First line
+          <command>
+            <echo>
+              <input>echo "Command 1"</input>
+              <stdout>Command 1</stdout>
+              <success code="0" />
+            </echo>
+          </command>
+          Middle line
+          <command>
+            <echo>
+              <input>echo "Command 2"</input>
+              <stdout>Command 2</stdout>
+              <success code="0" />
+            </echo>
+          </command>
+          Last line
+        </docs>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+
+    it('handles !! commands with pipes', () => {
+      const markdownContent = dedent`
+        Testing pipes
+        !! echo "hello world" | grep world
+        Done
+      `
+      writeTestFile('rules/test.md', markdownContent)
+
+      const output = invokeScript(dedent`
+        #!/usr/bin/env ${cliPath}
+        fs-to-xml rules/test.md
+      `)
+
+      const expected = dedent`
+        <rules>
+          Testing pipes
+          <command>
+            <echo>
+              <input>echo "hello world"</input>
+              <success code="0" />
+            </echo>
+            <pipe-operator />
+            <grep>
+              <input>grep world</input>
+              <stdout>hello world</stdout>
+              <success code="0" />
+            </grep>
+          </command>
+          Done
+        </rules>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+
+    it('handles !! commands with logical operators', () => {
+      const markdownContent = dedent`
+        Testing logical operators
+        !! echo "first" && echo "second"
+        Done
+      `
+      writeTestFile('rules/test.md', markdownContent)
+
+      const output = invokeScript(dedent`
+        #!/usr/bin/env ${cliPath}
+        fs-to-xml rules/test.md
+      `)
+
+      const expected = dedent`
+        <rules>
+          Testing logical operators
+          <command>
+            <echo>
+              <input>echo first</input>
+              <stdout>first</stdout>
+              <success code="0" />
+            </echo>
+            <logical-and-operator />
+            <echo>
+              <input>echo second</input>
+              <stdout>second</stdout>
+              <success code="0" />
+            </echo>
+          </command>
+          Done
+        </rules>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+
+    it('handles failed !! commands', () => {
+      const markdownContent = dedent`
+        Before error
+        !! ${errorGeneratorPath} --exit-code 2 --stderr "Command failed"
+        After error
+      `
+      writeTestFile('rules/test.md', markdownContent)
+
+      const output = invokeScript(dedent`
+        #!/usr/bin/env ${cliPath}
+        fs-to-xml rules/test.md
+      `)
+
+      const expected = dedent`
+        <rules>
+          Before error
+          <command>
+            <error-generator.sh>
+              <input>${errorGeneratorPath} --exit-code 2 --stderr "Command failed"</input>
+              <stdout />
+              <stderr>Command failed</stderr>
+              <failure code="2" />
+            </error-generator.sh>
+          </command>
+          After error
+        </rules>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+
+    it('ignores empty !! lines', () => {
+      const markdownContent = dedent`
+        Start
+        !!
+        !!   
+        !! echo "valid command"
+        End
+      `
+      writeTestFile('rules/test.md', markdownContent)
+
+      const output = invokeScript(dedent`
+        #!/usr/bin/env ${cliPath}
+        fs-to-xml rules/test.md
+      `)
+
+      const expected = dedent`
+        <rules>
+          Start
+          !!
+          !!   
+          <command>
+            <echo>
+              <input>echo "valid command"</input>
+              <stdout>valid command</stdout>
+              <success code="0" />
+            </echo>
+          </command>
+          End
+        </rules>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+
+    it('handles !! with fs-to-xml command', () => {
+      writeTestFile('data/nested.md', 'Nested content')
+      const markdownContent = dedent`
+        Start
+        !! fs-to-xml data/nested.md
+        End
+      `
+      writeTestFile('rules/test.md', markdownContent)
+
+      const output = invokeScript(dedent`
+        #!/usr/bin/env ${cliPath}
+        fs-to-xml rules/test.md
+      `)
+
+      const expected = dedent`
+        <rules>
+          Start
+          <data>
+            Nested content
+          </data>
+          End
+        </rules>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+
+    it('preserves indentation in markdown with !! commands', () => {
+      const markdownContent = dedent`
+        - Top level
+          - Nested item
+        !! echo "Command output"
+            - More nested
+        - Back to top
+      `
+      writeTestFile('rules/test.md', markdownContent)
+
+      const output = invokeScript(dedent`
+        #!/usr/bin/env ${cliPath}
+        fs-to-xml rules/test.md
+      `)
+
+      const expected = dedent`
+        <rules>
+          - Top level
+            - Nested item
+          <command>
+            <echo>
+              <input>echo "Command output"</input>
+              <stdout>Command output</stdout>
+              <success code="0" />
+            </echo>
+          </command>
+              - More nested
+          - Back to top
+        </rules>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+
+    it('does not process !! commands in non-shebang mode', () => {
+      const markdownContent = dedent`
+        This is a regular line
+        !! echo "This should NOT be processed"
+        Another regular line
+      `
+      writeTestFile('rules/test.md', markdownContent)
+      writeTestFile('script.sh', 'fs-to-xml rules/test.md')
+
+      const output = execSync(`${cliPath} script.sh`, {
+        encoding: 'utf8',
+        cwd: testDir,
+      })
+
+      const expected = dedent`
+        <command>
+          <fs-to-xml>
+            <input>fs-to-xml rules/test.md</input>
+            <rules>
+              This is a regular line
+              !! echo "This should NOT be processed"
+              Another regular line
+            </rules>
+            <success code="0" />
+          </fs-to-xml>
+        </command>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+
+    it('handles complex nested directories with !! commands', () => {
+      const markdownContent = dedent`
+        Start of doc
+        !! echo "In nested directory"
+        End of doc
+      `
+      writeTestFile('docs/api/v2/test.md', markdownContent)
+
+      const output = invokeScript(dedent`
+        #!/usr/bin/env ${cliPath}
+        fs-to-xml docs/api/v2/test.md
+      `)
+
+      const expected = dedent`
+        <docs>
+          <api>
+            <v2>
+              Start of doc
+              <command>
+                <echo>
+                  <input>echo "In nested directory"</input>
+                  <stdout>In nested directory</stdout>
+                  <success code="0" />
+                </echo>
+              </command>
+              End of doc
+            </v2>
+          </api>
+        </docs>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+  })
+
   describe('Path resolution in shebang mode', () => {
     it('resolves absolute paths as-is', () => {
       writeTestFile('rules/test.md', 'This is a test rule file.')

@@ -316,7 +316,7 @@ function processASTNode(
             indent += '  '
           })
 
-          buffer.addLine(indentMultilineContent(content, indent))
+          processMarkdownWithCommands(content, indent, buffer, scriptPath)
 
           for (let i = pathParts.length - 1; i >= 0; i--) {
             indent = indent.slice(0, -2)
@@ -426,6 +426,91 @@ function indentMultilineContent(content: string, indent: string): string {
   const lines = trimmedContent.split('\n')
   const nonEmptyLines = lines.filter(line => line.trim() !== '')
   return nonEmptyLines.map(line => `${indent}${line}`).join('\n')
+}
+
+function processMarkdownWithCommands(
+  content: string,
+  indent: string,
+  buffer: OutputBuffer,
+  scriptPath?: string,
+): void {
+  const lines = content.split('\n')
+
+  lines.forEach(line => {
+    const trimmedLine = line.trim()
+
+    if (trimmedLine === '') {
+      return
+    }
+
+    if (line.trim().startsWith('!!')) {
+      const commandLine = line.trim().substring(2).trim()
+
+      if (commandLine === '') {
+        buffer.addLine(`${indent}${line}`)
+        return
+      }
+
+      try {
+        const ast = parse(commandLine)
+
+        try {
+          validateAST(ast)
+        } catch (validationError: any) {
+          console.error(
+            `Validation error in markdown command: ${validationError.message}`,
+          )
+          process.exit(1)
+        }
+
+        const originalBuffer = new OutputBuffer()
+
+        if (
+          ast.commands[0]?.type === 'LogicalExpression' ||
+          ast.commands[0]?.type === 'Pipeline'
+        ) {
+          processASTNode(
+            ast.commands[0],
+            originalBuffer,
+            undefined,
+            false,
+            true,
+            scriptPath,
+          )
+        } else {
+          const isFs2xmlCommand = ast.commands[0]?.name?.text === 'fs-to-xml'
+          const shouldSkipWrapper = isFs2xmlCommand
+
+          if (!shouldSkipWrapper) {
+            originalBuffer.addLine('<command>')
+          }
+
+          processASTNode(
+            ast.commands[0],
+            originalBuffer,
+            undefined,
+            false,
+            true,
+            scriptPath,
+          )
+
+          if (!shouldSkipWrapper) {
+            originalBuffer.addLine('</command>')
+          }
+        }
+
+        const outputLines = originalBuffer.getLines()
+        outputLines.forEach(outputLine => {
+          buffer.addLine(`${indent}${outputLine}`)
+        })
+      } catch (parseError: any) {
+        console.error(`Error parsing markdown command: ${parseError.message}`)
+        process.exit(1)
+      }
+    } else {
+      buffer.addLine(`${indent}${line}`)
+    }
+  })
 }
 
 declare global {

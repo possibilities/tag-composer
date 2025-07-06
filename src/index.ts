@@ -12,6 +12,12 @@ interface CommandResult {
   exitCode: number
 }
 
+interface XmlNode {
+  tag: string
+  content: string[]
+  children: XmlNode[]
+}
+
 class OutputBuffer {
   private lines: string[] = []
 
@@ -434,11 +440,6 @@ function indentMultilineContent(content: string, indent: string): string {
   return nonEmptyLines.map(line => `${indent}${line}`).join('\n')
 }
 
-interface ProcessMarkdownResult {
-  contentBuffer: OutputBuffer
-  siblingBuffers: OutputBuffer[]
-}
-
 function processMarkdownWithCommands(
   content: string,
   indent: string,
@@ -524,14 +525,240 @@ function processMarkdownWithCommands(
   })
 }
 
-function processMarkdownWithCommandsForShebang(
-  content: string,
-  indent: string,
+declare global {
+  var lastExitCode: number
+}
+
+function extractAndPromoteTags(
+  node: XmlNode,
+  tagNames: string[],
+): { node: XmlNode; extracted: XmlNode[] } {
+  const extracted: XmlNode[] = []
+
+  const newChildren: XmlNode[] = []
+
+  for (const child of node.children) {
+    if (tagNames.includes(child.tag)) {
+      extracted.push(child)
+    } else {
+      const result = extractAndPromoteTags(child, tagNames)
+      newChildren.push(result.node)
+      extracted.push(...result.extracted)
+    }
+  }
+
+  return {
+    node: { ...node, children: newChildren },
+    extracted,
+  }
+}
+
+function mergeSameTagNodes(nodes: XmlNode[]): XmlNode[] {
+  const grouped = new Map<string, XmlNode[]>()
+
+  for (const node of nodes) {
+    if (!grouped.has(node.tag)) {
+      grouped.set(node.tag, [])
+    }
+    grouped.get(node.tag)!.push(node)
+  }
+
+  const merged: XmlNode[] = []
+
+  for (const [tag, sameTagNodes] of grouped) {
+    if (sameTagNodes.length === 1) {
+      merged.push(sameTagNodes[0])
+    } else {
+      const mergedContent: string[] = []
+      const mergedChildren: XmlNode[] = []
+
+      let hasContent = false
+      for (const node of sameTagNodes) {
+        if (node.content.length > 0) {
+          hasContent = true
+        }
+        mergedContent.push(...node.content)
+        mergedChildren.push(...node.children)
+      }
+
+      const mergedNode: XmlNode = {
+        tag,
+        content: mergedContent,
+        children: mergeSameTagNodes(mergedChildren),
+      }
+
+      if (!hasContent && mergedNode.children.length > 0) {
+        const childWithContent = mergedNode.children.find(
+          child =>
+            child.content.length > 0 ||
+            (child.children.length === 1 &&
+              child.children[0].content.length > 0),
+        )
+        if (childWithContent) {
+          merged.push(mergedNode)
+        } else {
+          merged.push(...mergedNode.children)
+        }
+      } else {
+        merged.push(mergedNode)
+      }
+    }
+  }
+
+  return merged
+}
+
+function flattenTree(root: XmlNode, tagsToPromote: string[]): XmlNode {
+  const result = extractAndPromoteTags(root, tagsToPromote)
+
+  const allChildren = [...result.node.children, ...result.extracted]
+
+  return {
+    ...result.node,
+    children: mergeSameTagNodes(allChildren),
+  }
+}
+
+function renderToXml(node: XmlNode, indent: string = ''): string[] {
+  const lines: string[] = []
+
+  if (node.tag) {
+    lines.push(`${indent}<${node.tag}>`)
+  }
+
+  const childIndent = node.tag ? indent + '  ' : indent
+
+  for (const contentLine of node.content) {
+    lines.push(`${childIndent}${contentLine}`)
+  }
+
+  for (const child of node.children) {
+    lines.push(...renderToXml(child, childIndent))
+  }
+
+  if (node.tag) {
+    lines.push(`${indent}</${node.tag}>`)
+  }
+
+  return lines
+}
+
+function processCommandToXmlNode(
+  node: any,
+  isShebangMode: boolean,
   scriptPath?: string,
-): ProcessMarkdownResult {
+): XmlNode | null {
+  if (node.type === 'Command' || node.type === 'SimpleCommand') {
+    const isFs2xml = node.name?.text === 'fs-to-xml'
+
+    if (isFs2xml) {
+      const filePath = node.suffix?.[0]?.text
+      if (!filePath) {
+        if (!isShebangMode) {
+          return {
+            tag: 'fs-to-xml',
+            content: [
+              '<input>fs-to-xml</input>',
+              '<stderr>Error: fs-to-xml requires a file path</stderr>',
+              '<failure code="1" />',
+            ],
+            children: [],
+          }
+        } else {
+          console.error('Error: fs-to-xml requires a file path')
+          process.exit(1)
+        }
+      }
+
+      const ext = extname(filePath)
+      if (ext !== '.md') {
+        if (!isShebangMode) {
+          return {
+            tag: 'fs-to-xml',
+            content: [
+              `<input>fs-to-xml ${filePath}</input>`,
+              `<stderr>Error: fs-to-xml only supports .md files, got ${ext || 'no extension'}</stderr>`,
+              '<failure code="1" />',
+            ],
+            children: [],
+          }
+        } else {
+          console.error(
+            `Error: fs-to-xml only supports .md files, got ${ext || 'no extension'}`,
+          )
+          process.exit(1)
+        }
+      }
+
+      try {
+        let resolvedPath = filePath
+        if (isShebangMode && scriptPath) {
+          if (filePath.startsWith('/')) {
+            resolvedPath = filePath
+          } else if (filePath.startsWith('.')) {
+            resolvedPath = join(dirname(scriptPath), filePath)
+          } else {
+            resolvedPath = filePath
+          }
+        }
+
+        const content = readFileSync(resolvedPath, 'utf8')
+        const dirPath = dirname(resolvedPath)
+        const pathParts = dirPath
+          .split('/')
+          .filter(part => part && part !== '.' && part !== '..')
+
+        let currentNode: XmlNode = {
+          tag: '',
+          content: [],
+          children: [],
+        }
+
+        let targetNode = currentNode
+
+        for (const part of pathParts) {
+          const childNode: XmlNode = {
+            tag: part,
+            content: [],
+            children: [],
+          }
+          targetNode.children.push(childNode)
+          targetNode = childNode
+        }
+
+        const lines = content.split('\n').filter(line => line.trim() !== '')
+        targetNode.content = lines
+
+        return currentNode.children[0] || null
+      } catch (error: any) {
+        if (!isShebangMode) {
+          return {
+            tag: 'fs-to-xml',
+            content: [
+              `<input>fs-to-xml ${filePath}</input>`,
+              `<stderr>Error reading file: ${error.message}</stderr>`,
+              '<failure code="1" />',
+            ],
+            children: [],
+          }
+        } else {
+          console.error(`Error: fs-to-xml failed - ${error.message}`)
+          process.exit(1)
+        }
+      }
+    }
+  }
+
+  return null
+}
+
+function processMarkdownWithCommandsToXmlNodes(
+  content: string,
+  scriptPath?: string,
+): { mainContent: string[]; siblingNodes: XmlNode[] } {
   const lines = content.split('\n')
-  const contentBuffer = new OutputBuffer()
-  const siblingBuffers: OutputBuffer[] = []
+  const mainContent: string[] = []
+  const siblingNodes: XmlNode[] = []
 
   lines.forEach(line => {
     const trimmedLine = line.trim()
@@ -544,7 +771,7 @@ function processMarkdownWithCommandsForShebang(
       const commandLine = line.trim().substring(2).trim()
 
       if (commandLine === '') {
-        contentBuffer.addLine(`${indent}${line}`)
+        mainContent.push(line)
         return
       }
 
@@ -560,64 +787,25 @@ function processMarkdownWithCommandsForShebang(
           process.exit(1)
         }
 
-        const originalBuffer = new OutputBuffer()
-
-        if (
-          ast.commands[0]?.type === 'LogicalExpression' ||
-          ast.commands[0]?.type === 'Pipeline'
-        ) {
-          processASTNode(
-            ast.commands[0],
-            originalBuffer,
-            undefined,
-            false,
-            true,
-            scriptPath,
-          )
-        } else {
-          const isFs2xmlCommand = ast.commands[0]?.name?.text === 'fs-to-xml'
-          const shouldSkipWrapper = isFs2xmlCommand
-
-          if (!shouldSkipWrapper) {
-            originalBuffer.addLine('<command>')
+        const commandNode = ast.commands[0]
+        if (commandNode?.name?.text === 'fs-to-xml') {
+          const xmlNode = processCommandToXmlNode(commandNode, true, scriptPath)
+          if (xmlNode) {
+            siblingNodes.push(xmlNode)
           }
-
-          processASTNode(
-            ast.commands[0],
-            originalBuffer,
-            undefined,
-            false,
-            true,
-            scriptPath,
-          )
-
-          if (!shouldSkipWrapper) {
-            originalBuffer.addLine('</command>')
-          }
-        }
-
-        if (ast.commands[0]?.name?.text === 'fs-to-xml') {
-          siblingBuffers.push(originalBuffer)
         } else {
-          const outputLines = originalBuffer.getLines()
-          outputLines.forEach(outputLine => {
-            contentBuffer.addLine(`${indent}${outputLine}`)
-          })
+          mainContent.push(line)
         }
       } catch (parseError: any) {
         console.error(`Error parsing markdown command: ${parseError.message}`)
         process.exit(1)
       }
     } else {
-      contentBuffer.addLine(`${indent}${line}`)
+      mainContent.push(line)
     }
   })
 
-  return { contentBuffer, siblingBuffers }
-}
-
-declare global {
-  var lastExitCode: number
+  return { mainContent, siblingNodes }
 }
 
 async function main() {
@@ -647,47 +835,79 @@ async function main() {
             .split('/')
             .filter(part => part && part !== '.' && part !== '..')
 
-          let indent = ''
-          pathParts.forEach(part => {
-            buffer.addLine(`${indent}<${part}>`)
-            indent += '  '
-          })
-
           if (startsWithShebang) {
             const contentToProcess = lines.slice(1).join('\n')
-            const result = processMarkdownWithCommandsForShebang(
+            const result = processMarkdownWithCommandsToXmlNodes(
               contentToProcess,
-              indent,
               file,
             )
 
-            const contentLines = result.contentBuffer.getLines()
-            contentLines.forEach(line => {
-              buffer.addLine(line)
-            })
+            let mainContentNode: XmlNode | null = null
 
-            for (let i = pathParts.length - 1; i >= 0; i--) {
-              indent = indent.slice(0, -2)
-              buffer.addLine(`${indent}</${pathParts[i]}>`)
+            if (pathParts.length > 0) {
+              mainContentNode = {
+                tag: pathParts[0],
+                content: [],
+                children: [],
+              }
+
+              let targetNode = mainContentNode
+              for (let i = 1; i < pathParts.length; i++) {
+                const childNode: XmlNode = {
+                  tag: pathParts[i],
+                  content: [],
+                  children: [],
+                }
+                targetNode.children.push(childNode)
+                targetNode = childNode
+              }
+
+              targetNode.content = result.mainContent
             }
 
-            const parentIndent = indent
-            result.siblingBuffers.forEach(siblingBuffer => {
-              const siblingLines = siblingBuffer.getLines()
-              siblingLines.forEach(line => {
-                buffer.addLine(`${parentIndent}${line}`)
-              })
-            })
+            const allNodes = mainContentNode
+              ? [mainContentNode, ...result.siblingNodes]
+              : result.siblingNodes
+
+            const mergedRootNode: XmlNode = {
+              tag: '',
+              content: [],
+              children: mergeSameTagNodes(allNodes),
+            }
+
+            const tagsToPromote = ['rules', 'roles', 'instructions', 'query']
+            const flattened = flattenTree(mergedRootNode, tagsToPromote)
+
+            const xmlLines = renderToXml(flattened)
+            xmlLines.forEach(line => buffer.addLine(line))
           } else {
-            buffer.addLine(indentMultilineContent(content, indent))
-
-            for (let i = pathParts.length - 1; i >= 0; i--) {
-              indent = indent.slice(0, -2)
-              buffer.addLine(`${indent}</${pathParts[i]}>`)
+            let rootNode: XmlNode = {
+              tag: '',
+              content: [],
+              children: [],
             }
+
+            let targetNode = rootNode
+            for (const part of pathParts) {
+              const childNode: XmlNode = {
+                tag: part,
+                content: [],
+                children: [],
+              }
+              targetNode.children.push(childNode)
+              targetNode = childNode
+            }
+
+            const nonEmptyLines = content
+              .split('\n')
+              .filter(line => line.trim() !== '')
+            targetNode.content = nonEmptyLines
+
+            const xmlLines = renderToXml(rootNode)
+            xmlLines.forEach(line => buffer.addLine(line))
           }
 
-          buffer.flushAndFlatten(flatten)
+          buffer.flushAndFlatten(false)
           return
         }
 

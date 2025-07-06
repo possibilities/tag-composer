@@ -25,7 +25,7 @@ const invokeScript = (scriptContent: string): string => {
 describe('FS to XML', () => {
   it('outputs simple echo command as XML', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env -S ./dist/cli.js --shebang
+      #!/usr/bin/env ./dist/cli.js
       echo "foo bar"
     `)
 
@@ -44,7 +44,7 @@ describe('FS to XML', () => {
 
   it('skips comment lines', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env -S ./dist/cli.js --shebang
+      #!/usr/bin/env ./dist/cli.js
       # This is a comment
       echo hello
       # Another comment
@@ -65,7 +65,7 @@ describe('FS to XML', () => {
 
   it('outputs multiple echo commands', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env -S ./dist/cli.js --shebang
+      #!/usr/bin/env ./dist/cli.js
       echo first
       echo second
       echo "third test"
@@ -100,7 +100,7 @@ describe('FS to XML', () => {
 
   it('handles empty lines', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env -S ./dist/cli.js --shebang
+      #!/usr/bin/env ./dist/cli.js
       echo first
       
       echo second
@@ -128,7 +128,7 @@ describe('FS to XML', () => {
 
   it('handles echo with no arguments', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env -S ./dist/cli.js --shebang
+      #!/usr/bin/env ./dist/cli.js
       echo
     `)
 
@@ -147,7 +147,7 @@ describe('FS to XML', () => {
 
   it('handles echo with multiple arguments', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env -S ./dist/cli.js --shebang
+      #!/usr/bin/env ./dist/cli.js
       echo foo bar baz
     `)
 
@@ -166,7 +166,7 @@ describe('FS to XML', () => {
 
   it('outputs commands with logical AND operator', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env -S ./dist/cli.js --shebang
+      #!/usr/bin/env ./dist/cli.js
       echo foo && echo bar
     `)
 
@@ -191,7 +191,7 @@ describe('FS to XML', () => {
 
   it('outputs multiple commands with logical AND operators', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env -S ./dist/cli.js --shebang
+      #!/usr/bin/env ./dist/cli.js
       echo foo && echo bar && echo baz
     `)
 
@@ -222,7 +222,7 @@ describe('FS to XML', () => {
 
   it('outputs commands with logical OR operator', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env -S ./dist/cli.js --shebang
+      #!/usr/bin/env ./dist/cli.js
       echo foo || echo bar
     `)
 
@@ -242,7 +242,7 @@ describe('FS to XML', () => {
 
   it('executes second command when first fails with OR operator', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env -S ./dist/cli.js --shebang
+      #!/usr/bin/env ./dist/cli.js
       false || echo bar
     `)
 
@@ -267,7 +267,7 @@ describe('FS to XML', () => {
 
   it('handles multiple OR operators with first command succeeding', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env -S ./dist/cli.js --shebang
+      #!/usr/bin/env ./dist/cli.js
       echo foo || exit 1 || echo bar
     `)
 
@@ -288,7 +288,7 @@ describe('FS to XML', () => {
 
   it('handles pipe operations', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env -S ./dist/cli.js --shebang
+      #!/usr/bin/env ./dist/cli.js
       echo foo | grep foo
     `)
 
@@ -312,7 +312,7 @@ describe('FS to XML', () => {
 
   it('captures stderr output when commands fail', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env -S ./dist/cli.js --shebang
+      #!/usr/bin/env ./dist/cli.js
       ./test-helpers/error-generator.sh --exit-code 2 --stderr "Command failed"
     `)
 
@@ -332,7 +332,7 @@ describe('FS to XML', () => {
 
   it('shows stderr in pipe operations', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env -S ./dist/cli.js --shebang
+      #!/usr/bin/env ./dist/cli.js
       echo test | ./test-helpers/error-generator.sh --exit-code 2 --stderr "Invalid option" --stdout "filtered"
     `)
 
@@ -357,7 +357,7 @@ describe('FS to XML', () => {
 
   it('shows both stdout and stderr with custom exit code', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env -S ./dist/cli.js --shebang
+      #!/usr/bin/env ./dist/cli.js
       ./test-helpers/error-generator.sh --exit-code 42 --stdout "Normal output" --stderr "Error output"
     `)
 
@@ -373,5 +373,92 @@ describe('FS to XML', () => {
     `
 
     expect(output.trim()).toBe(expected)
+  })
+
+  describe('fs-to-xml special command', () => {
+    it('processes markdown file with single directory', () => {
+      const output = invokeScript(dedent`
+        #!/usr/bin/env ./dist/cli.js
+        fs-to-xml tests/fixtures/rules/test.md
+      `)
+
+      // We expect the inner XML from the --no-shebang mode to be wrapped as stdout
+      expect(output.trim()).toContain('<command>')
+      expect(output.trim()).toContain('<fs-to-xml>')
+      expect(output.trim()).toContain(
+        '<input>fs-to-xml tests/fixtures/rules/test.md</input>',
+      )
+      expect(output.trim()).toContain('<tests>')
+      expect(output.trim()).toContain('<fixtures>')
+      expect(output.trim()).toContain('<rules>')
+      expect(output.trim()).toContain('This is a test rule file.')
+      expect(output.trim()).toContain('</rules>')
+      expect(output.trim()).toContain('</fixtures>')
+      expect(output.trim()).toContain('</tests>')
+    })
+
+    it('processes markdown file with nested directories', () => {
+      const output = invokeScript(dedent`
+        #!/usr/bin/env ./dist/cli.js
+        fs-to-xml tests/fixtures/rules/foo/bar.md
+      `)
+
+      // We expect the inner XML from the --no-shebang mode to be wrapped as stdout
+      expect(output.trim()).toContain('<command>')
+      expect(output.trim()).toContain('<fs-to-xml>')
+      expect(output.trim()).toContain(
+        '<input>fs-to-xml tests/fixtures/rules/foo/bar.md</input>',
+      )
+      expect(output.trim()).toContain('<tests>')
+      expect(output.trim()).toContain('<fixtures>')
+      expect(output.trim()).toContain('<rules>')
+      expect(output.trim()).toContain('<foo>')
+      expect(output.trim()).toContain('This is a nested rule file.')
+      expect(output.trim()).toContain('</foo>')
+      expect(output.trim()).toContain('</rules>')
+      expect(output.trim()).toContain('</fixtures>')
+      expect(output.trim()).toContain('</tests>')
+    })
+
+    it('fails when fs-to-xml is used in a pipe', () => {
+      let error = ''
+      try {
+        invokeScript(dedent`
+          #!/usr/bin/env ./dist/cli.js
+          echo foo | fs-to-xml tests/fixtures/rules/test.md
+        `)
+      } catch (e: any) {
+        error = e.message
+      }
+
+      expect(error).toContain('fs-to-xml cannot be used in pipe operations')
+    })
+
+    it('fails when fs-to-xml is used with logical operators', () => {
+      let error = ''
+      try {
+        invokeScript(dedent`
+          #!/usr/bin/env ./dist/cli.js
+          fs-to-xml tests/fixtures/rules/test.md && echo done
+        `)
+      } catch (e: any) {
+        error = e.message
+      }
+
+      expect(error).toContain('fs-to-xml cannot be used with logical operators')
+    })
+
+    it('errors when file is not markdown in --no-shebang mode', () => {
+      let error = ''
+      try {
+        execSync('./dist/cli.js --no-shebang tests/fixtures/rules/test.txt', {
+          encoding: 'utf8',
+        })
+      } catch (e: any) {
+        error = e.stderr
+      }
+
+      expect(error).toContain('--no-shebang mode only supports .md files')
+    })
   })
 })

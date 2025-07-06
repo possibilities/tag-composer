@@ -125,6 +125,39 @@ function checkForExpansions(node: any, path: string = ''): void {
   }
 }
 
+function checkForFsToXmlInCompound(command: any): void {
+  if (command.type === 'Command') {
+    if (command.name?.text === 'fs-to-xml') {
+      return // Simple command is allowed
+    }
+  } else if (command.type === 'Pipeline') {
+    command.commands.forEach((cmd: any) => {
+      if (cmd.name?.text === 'fs-to-xml') {
+        throw new Error('fs-to-xml cannot be used in pipe operations')
+      }
+    })
+  } else if (command.type === 'LogicalExpression') {
+    const checkNode = (node: any): void => {
+      if (node.type === 'Command' && node.name?.text === 'fs-to-xml') {
+        throw new Error(
+          'fs-to-xml cannot be used with logical operators (&&, ||)',
+        )
+      } else if (node.type === 'Pipeline') {
+        node.commands.forEach((cmd: any) => {
+          if (cmd.name?.text === 'fs-to-xml') {
+            throw new Error('fs-to-xml cannot be used in compound commands')
+          }
+        })
+      } else if (node.type === 'LogicalExpression') {
+        checkNode(node.left)
+        checkNode(node.right)
+      }
+    }
+    checkNode(command.left)
+    checkNode(command.right)
+  }
+}
+
 function checkForUnsupportedFeatures(command: any): void {
   if (command.type === 'Command') {
     if (command.prefix && Array.isArray(command.prefix)) {
@@ -195,6 +228,7 @@ export function validateAST(ast: any): void {
     try {
       checkForExpansions(command, `commands[${i}]`)
       checkForUnsupportedFeatures(command)
+      checkForFsToXmlInCompound(command)
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(`${error.message} (line ${i + 1})`)

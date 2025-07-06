@@ -1,7 +1,7 @@
 import { Command } from 'commander'
 import { readFileSync } from 'fs'
 import { spawnSync } from 'child_process'
-import { basename } from 'path'
+import { basename, extname, dirname } from 'path'
 import packageJson from '../package.json' assert { type: 'json' }
 import parse from 'bash-parser'
 import { validateAST } from './ast-validator.js'
@@ -75,14 +75,18 @@ function processASTNode(
       const isLast = index === node.commands.length - 1
 
       if (index === 0) {
-        const commandText = reconstructCommand(cmd)
+        const isFs2xml = cmd.name?.text === 'fs-to-xml'
+        const commandText = reconstructCommand(cmd, isFs2xml)
         const result = executeCommand(commandText)
         lastOutput = result.stdout
         lastExitCode = result.exitCode
 
         const commandName = cmd.name?.text ? basename(cmd.name.text) : 'unknown'
         console.log(`  <${commandName}>`)
-        console.log(`    <input>${commandText}</input>`)
+        const displayCommand = isFs2xml
+          ? reconstructCommand(cmd, false)
+          : commandText
+        console.log(`    <input>${displayCommand}</input>`)
 
         const trimmedStderr = result.stderr.replace(/\n$/, '')
         if (trimmedStderr) {
@@ -98,7 +102,8 @@ function processASTNode(
       } else {
         console.log('  <pipe-operator />')
 
-        const commandText = reconstructCommand(cmd)
+        const isFs2xml = cmd.name?.text === 'fs-to-xml'
+        const commandText = reconstructCommand(cmd, isFs2xml)
         const pipeCommand = `echo '${lastOutput.replace(/'/g, "'\\''").replace(/\n$/, '')}' | ${commandText}`
         const result = executeCommand(pipeCommand)
         lastOutput = result.stdout
@@ -106,7 +111,10 @@ function processASTNode(
 
         const commandName = cmd.name?.text ? basename(cmd.name.text) : 'unknown'
         console.log(`  <${commandName}>`)
-        console.log(`    <input>${commandText}</input>`)
+        const displayCommand = isFs2xml
+          ? reconstructCommand(cmd, false)
+          : commandText
+        console.log(`    <input>${displayCommand}</input>`)
         if (isLast) {
           const trimmedOutput = lastOutput.replace(/\n$/, '')
           if (trimmedOutput === '') {
@@ -138,15 +146,21 @@ function processASTNode(
   }
 
   if (node.type === 'Command' || node.type === 'SimpleCommand') {
+    const isFs2xml = node.name?.text === 'fs-to-xml'
+
     if (!commandText) {
-      commandText = reconstructCommand(node)
+      commandText = reconstructCommand(node, isFs2xml)
     }
 
     const result = executeCommand(commandText)
     const commandName = node.name?.text ? basename(node.name.text) : 'unknown'
 
     console.log(`  <${commandName}>`)
-    console.log(`    <input>${commandText}</input>`)
+    // For fs-to-xml, show the original command in input, not the transformed one
+    const displayCommand = isFs2xml
+      ? reconstructCommand(node, false)
+      : commandText
+    console.log(`    <input>${displayCommand}</input>`)
 
     const trimmedStdout = result.stdout.replace(/\n$/, '')
     if (trimmedStdout === '') {
@@ -171,11 +185,26 @@ function processASTNode(
   }
 }
 
-function reconstructCommand(node: any): string {
+function reconstructCommand(node: any, transformFsToXml = false): string {
   const parts: string[] = []
 
   if (node.name?.text) {
-    parts.push(node.name.text)
+    if (transformFsToXml && node.name.text === 'fs-to-xml') {
+      // Replace fs-to-xml with the current executable
+      // process.argv[0] is node, process.argv[1] is the CLI script path
+      const cliPath = process.argv[1]
+      if (cliPath && cliPath.endsWith('.js')) {
+        // We're running the CLI directly
+        parts.push(cliPath)
+      } else {
+        // We're running via shebang, need to find the actual CLI
+        // The shebang line contains the path to the CLI
+        parts.push('./dist/cli.js')
+      }
+      parts.push('--no-shebang')
+    } else {
+      parts.push(node.name.text)
+    }
   }
 
   if (node.suffix) {
@@ -208,11 +237,55 @@ async function main() {
     .version(packageJson.version)
     .argument('<file>', 'script file to process')
     .option(
-      '--shebang',
-      'Indicates the tool is being used as a shebang interpreter',
+      '--no-shebang',
+      'Process file directly without shebang interpretation',
     )
-    .action((file, _options) => {
+    .action((file, options) => {
       try {
+        // Handle --no-shebang mode for markdown files
+        if (!options.shebang) {
+          const ext = extname(file)
+          if (ext !== '.md') {
+            console.error(
+              `Error: --no-shebang mode only supports .md files, got ${ext || 'no extension'}`,
+            )
+            process.exit(1)
+          }
+
+          const content = readFileSync(file, 'utf8')
+          const dirPath = dirname(file)
+
+          // Build XML structure from path
+          const pathParts = dirPath
+            .split('/')
+            .filter(part => part && part !== '.')
+
+          console.log('<command>')
+          console.log('  <fs-to-xml>')
+          console.log(`    <input>fs-to-xml ${file}</input>`)
+
+          // Create nested XML tags
+          let indent = '    '
+          pathParts.forEach(part => {
+            console.log(`${indent}<${part}>`)
+            indent += '  '
+          })
+
+          // Output content
+          console.log(`${indent}${content.replace(/\n$/, '')}`)
+
+          // Close nested XML tags
+          for (let i = pathParts.length - 1; i >= 0; i--) {
+            indent = indent.slice(0, -2)
+            console.log(`${indent}</${pathParts[i]}>`)
+          }
+
+          console.log('    <success code="0" />')
+          console.log('  </fs-to-xml>')
+          console.log('</command>')
+          return
+        }
+
         const content = readFileSync(file, 'utf8')
         const lines = content.split('\n')
 
@@ -247,7 +320,8 @@ async function main() {
               processASTNode(ast.commands[0])
             } else {
               console.log('<command>')
-              processASTNode(ast.commands[0], line)
+              // Don't pass line as commandText so that fs-to-xml can be transformed
+              processASTNode(ast.commands[0])
               console.log('</command>')
             }
           } catch (parseError: any) {

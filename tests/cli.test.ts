@@ -33,7 +33,8 @@ describe('FS to XML', () => {
       <command>
         <echo>
           <input>echo "foo bar"</input>
-          <output>foo bar</output>
+          <stdout>foo bar</stdout>
+          <exit>0</exit>
         </echo>
       </command>
     `
@@ -53,7 +54,8 @@ describe('FS to XML', () => {
       <command>
         <echo>
           <input>echo hello</input>
-          <output>hello</output>
+          <stdout>hello</stdout>
+          <exit>0</exit>
         </echo>
       </command>
     `
@@ -73,19 +75,22 @@ describe('FS to XML', () => {
       <command>
         <echo>
           <input>echo first</input>
-          <output>first</output>
+          <stdout>first</stdout>
+          <exit>0</exit>
         </echo>
       </command>
       <command>
         <echo>
           <input>echo second</input>
-          <output>second</output>
+          <stdout>second</stdout>
+          <exit>0</exit>
         </echo>
       </command>
       <command>
         <echo>
           <input>echo "third test"</input>
-          <output>third test</output>
+          <stdout>third test</stdout>
+          <exit>0</exit>
         </echo>
       </command>
     `
@@ -105,13 +110,15 @@ describe('FS to XML', () => {
       <command>
         <echo>
           <input>echo first</input>
-          <output>first</output>
+          <stdout>first</stdout>
+          <exit>0</exit>
         </echo>
       </command>
       <command>
         <echo>
           <input>echo second</input>
-          <output>second</output>
+          <stdout>second</stdout>
+          <exit>0</exit>
         </echo>
       </command>
     `
@@ -129,7 +136,8 @@ describe('FS to XML', () => {
       <command>
         <echo>
           <input>echo</input>
-          <output-is-empty />
+          <stdout />
+          <exit>0</exit>
         </echo>
       </command>
     `
@@ -147,8 +155,155 @@ describe('FS to XML', () => {
       <command>
         <echo>
           <input>echo foo bar baz</input>
-          <output>foo bar baz</output>
+          <stdout>foo bar baz</stdout>
+          <exit>0</exit>
         </echo>
+      </command>
+    `
+
+    expect(output.trim()).toBe(expected)
+  })
+
+  it('outputs commands with logical AND operator', () => {
+    const output = invokeScript(dedent`
+      #!/usr/bin/env ./dist/cli.js
+      echo foo && echo bar
+    `)
+
+    const expected = dedent`
+      <command>
+        <echo>
+          <input>echo foo</input>
+          <stdout>foo</stdout>
+          <exit>0</exit>
+        </echo>
+        <logical-and-operator />
+        <echo>
+          <input>echo bar</input>
+          <stdout>bar</stdout>
+          <exit>0</exit>
+        </echo>
+      </command>
+    `
+
+    expect(output.trim()).toBe(expected)
+  })
+
+  it('outputs multiple commands with logical AND operators', () => {
+    const output = invokeScript(dedent`
+      #!/usr/bin/env ./dist/cli.js
+      echo foo && echo bar && echo baz
+    `)
+
+    const expected = dedent`
+      <command>
+        <echo>
+          <input>echo foo</input>
+          <stdout>foo</stdout>
+          <exit>0</exit>
+        </echo>
+        <logical-and-operator />
+        <echo>
+          <input>echo bar</input>
+          <stdout>bar</stdout>
+          <exit>0</exit>
+        </echo>
+        <logical-and-operator />
+        <echo>
+          <input>echo baz</input>
+          <stdout>baz</stdout>
+          <exit>0</exit>
+        </echo>
+      </command>
+    `
+
+    expect(output.trim()).toBe(expected)
+  })
+
+  it('outputs commands with logical OR operator', () => {
+    const output = invokeScript(dedent`
+      #!/usr/bin/env ./dist/cli.js
+      echo foo || echo bar
+    `)
+
+    const expected = dedent`
+      <command>
+        <echo>
+          <input>echo foo</input>
+          <stdout>foo</stdout>
+          <exit>0</exit>
+        </echo>
+        <logical-or-operator />
+      </command>
+    `
+
+    expect(output.trim()).toBe(expected)
+  })
+
+  it('executes second command when first fails with OR operator', () => {
+    const output = invokeScript(dedent`
+      #!/usr/bin/env ./dist/cli.js
+      exit 1 || echo bar
+    `)
+
+    const expected = dedent`
+      <command>
+        <exit>
+          <input>exit 1</input>
+          <stdout />
+          <exit>1</exit>
+        </exit>
+        <logical-or-operator />
+        <echo>
+          <input>echo bar</input>
+          <stdout>bar</stdout>
+          <exit>0</exit>
+        </echo>
+      </command>
+    `
+
+    expect(output.trim()).toBe(expected)
+  })
+
+  it('handles multiple OR operators with first command succeeding', () => {
+    const output = invokeScript(dedent`
+      #!/usr/bin/env ./dist/cli.js
+      echo foo || exit 1 || echo bar
+    `)
+
+    const expected = dedent`
+      <command>
+        <echo>
+          <input>echo foo</input>
+          <stdout>foo</stdout>
+          <exit>0</exit>
+        </echo>
+        <logical-or-operator />
+        <logical-or-operator />
+      </command>
+    `
+
+    expect(output.trim()).toBe(expected)
+  })
+
+  it('handles pipe operations', () => {
+    const output = invokeScript(dedent`
+      #!/usr/bin/env ./dist/cli.js
+      echo foo | grep foo
+    `)
+
+    const expected = dedent`
+      <command>
+        <echo>
+          <input>echo foo</input>
+          <exit>0</exit>
+        </echo>
+        <pipe-operator />
+        <grep>
+          <input>grep foo</input>
+          <stdout>foo</stdout>
+          <exit>0</exit>
+        </grep>
       </command>
     `
 

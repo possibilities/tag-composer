@@ -1,8 +1,8 @@
 import dedent from 'dedent'
 import { describe, it, expect } from 'vitest'
-import { renderToTags } from '../src/tag-renderer'
+import { renderTags } from '../src/render-tags'
 
-describe('renderToTags', () => {
+describe('renderTags', () => {
   describe('generic rendering', () => {
     it('should render nested children', () => {
       const lines = [
@@ -32,7 +32,7 @@ describe('renderToTags', () => {
         },
       ]
 
-      const result = renderToTags(lines)
+      const result = renderTags(lines)
 
       expect(result).toBe(dedent`
         <document>
@@ -76,7 +76,7 @@ describe('renderToTags', () => {
         },
       ]
 
-      const result = renderToTags(lines)
+      const result = renderTags(lines)
 
       expect(result).toBe(dedent`
         <document>
@@ -103,7 +103,7 @@ describe('renderToTags', () => {
         },
       ]
 
-      const result = renderToTags(lines)
+      const result = renderTags(lines)
 
       expect(result).toBe(dedent`
         <document>
@@ -129,7 +129,7 @@ describe('renderToTags', () => {
         },
       ]
 
-      const result = renderToTags(lines)
+      const result = renderTags(lines)
 
       expect(result).toBe(dedent`
         <document>
@@ -157,7 +157,7 @@ describe('renderToTags', () => {
         },
       ]
 
-      const result = renderToTags(lines)
+      const result = renderTags(lines)
 
       expect(result).toBe(dedent`
         <document>
@@ -181,7 +181,7 @@ describe('renderToTags', () => {
         },
       ]
 
-      const result = renderToTags(lines)
+      const result = renderTags(lines)
 
       expect(result).toBe(dedent`
         <document>
@@ -203,7 +203,7 @@ describe('renderToTags', () => {
         },
       ]
 
-      const result = renderToTags(lines, { indent: '    ' })
+      const result = renderTags(lines, { indent: '    ' })
 
       expect(result).toBe(dedent`
         <document>
@@ -234,7 +234,7 @@ describe('renderToTags', () => {
         },
       ]
 
-      const result = renderToTags(lines, { indent: '\t' })
+      const result = renderTags(lines, { indent: '\t' })
 
       expect(result).toBe(dedent`
         <document>
@@ -254,7 +254,7 @@ describe('renderToTags', () => {
     it('should handle empty input', () => {
       const lines: any[] = []
 
-      const result = renderToTags(lines)
+      const result = renderTags(lines)
 
       expect(result).toBe(dedent`
         <document>
@@ -276,7 +276,7 @@ describe('renderToTags', () => {
         },
       ]
 
-      const result = renderToTags(lines)
+      const result = renderTags(lines)
 
       expect(result).toBe(dedent`
         <document>
@@ -302,7 +302,7 @@ describe('renderToTags', () => {
         },
       ]
 
-      const result = renderToTags(lines)
+      const result = renderTags(lines)
 
       expect(result).toBe(dedent`
         <document>
@@ -337,7 +337,7 @@ describe('renderToTags', () => {
         },
       ]
 
-      const result = renderToTags(lines)
+      const result = renderTags(lines)
 
       expect(result).toBe(dedent`
         <document>
@@ -367,7 +367,7 @@ describe('renderToTags', () => {
         },
       ]
 
-      const result = renderToTags(lines)
+      const result = renderTags(lines)
 
       expect(result).toBe(dedent`
         <document>

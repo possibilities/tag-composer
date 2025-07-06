@@ -39,7 +39,7 @@ function renderLine(line: ParsedLine, level: number, indent: string): string[] {
   return output
 }
 
-export function renderToTags(
+export function renderTags(
   lines: ParsedLine[],
   options: RenderOptions = {},
 ): string {

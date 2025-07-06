@@ -201,7 +201,7 @@ function processASTNode(
         if (isShebangMode) {
           const pathParts = dirPath
             .split('/')
-            .filter(part => part && part !== '.')
+            .filter(part => part && part !== '.' && part !== '..')
 
           let indent = ''
           pathParts.forEach(part => {
@@ -221,7 +221,7 @@ function processASTNode(
 
           const pathParts = dirPath
             .split('/')
-            .filter(part => part && part !== '.')
+            .filter(part => part && part !== '.' && part !== '..')
 
           let indent = '    '
           pathParts.forEach(part => {
@@ -336,7 +336,7 @@ async function main() {
 
           const pathParts = dirPath
             .split('/')
-            .filter(part => part && part !== '.')
+            .filter(part => part && part !== '.' && part !== '..')
 
           let indent = ''
           pathParts.forEach(part => {

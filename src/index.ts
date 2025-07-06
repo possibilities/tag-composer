@@ -75,18 +75,14 @@ function processASTNode(
       const isLast = index === node.commands.length - 1
 
       if (index === 0) {
-        const isFs2xml = cmd.name?.text === 'fs-to-xml'
-        const commandText = reconstructCommand(cmd, isFs2xml)
+        const commandText = reconstructCommand(cmd)
         const result = executeCommand(commandText)
         lastOutput = result.stdout
         lastExitCode = result.exitCode
 
         const commandName = cmd.name?.text ? basename(cmd.name.text) : 'unknown'
         console.log(`  <${commandName}>`)
-        const displayCommand = isFs2xml
-          ? reconstructCommand(cmd, false)
-          : commandText
-        console.log(`    <input>${displayCommand}</input>`)
+        console.log(`    <input>${commandText}</input>`)
 
         const trimmedStderr = result.stderr.replace(/\n$/, '')
         if (trimmedStderr) {
@@ -102,8 +98,7 @@ function processASTNode(
       } else {
         console.log('  <pipe-operator />')
 
-        const isFs2xml = cmd.name?.text === 'fs-to-xml'
-        const commandText = reconstructCommand(cmd, isFs2xml)
+        const commandText = reconstructCommand(cmd)
         const pipeCommand = `echo '${lastOutput.replace(/'/g, "'\\''").replace(/\n$/, '')}' | ${commandText}`
         const result = executeCommand(pipeCommand)
         lastOutput = result.stdout
@@ -111,10 +106,7 @@ function processASTNode(
 
         const commandName = cmd.name?.text ? basename(cmd.name.text) : 'unknown'
         console.log(`  <${commandName}>`)
-        const displayCommand = isFs2xml
-          ? reconstructCommand(cmd, false)
-          : commandText
-        console.log(`    <input>${displayCommand}</input>`)
+        console.log(`    <input>${commandText}</input>`)
         if (isLast) {
           const trimmedOutput = lastOutput.replace(/\n$/, '')
           if (trimmedOutput === '') {
@@ -148,19 +140,86 @@ function processASTNode(
   if (node.type === 'Command' || node.type === 'SimpleCommand') {
     const isFs2xml = node.name?.text === 'fs-to-xml'
 
+    if (isFs2xml) {
+      // Handle fs-to-xml specially - read the file directly
+      const filePath = node.suffix?.[0]?.text
+      if (!filePath) {
+        console.log('  <fs-to-xml>')
+        console.log('    <input>fs-to-xml</input>')
+        console.log(
+          '    <stderr>Error: fs-to-xml requires a file path</stderr>',
+        )
+        console.log('    <failure code="1" />')
+        console.log('  </fs-to-xml>')
+        global.lastExitCode = 1
+        return
+      }
+
+      const ext = extname(filePath)
+      if (ext !== '.md') {
+        console.log('  <fs-to-xml>')
+        console.log(`    <input>fs-to-xml ${filePath}</input>`)
+        console.log(
+          `    <stderr>Error: fs-to-xml only supports .md files, got ${ext || 'no extension'}</stderr>`,
+        )
+        console.log('    <failure code="1" />')
+        console.log('  </fs-to-xml>')
+        global.lastExitCode = 1
+        return
+      }
+
+      try {
+        const content = readFileSync(filePath, 'utf8')
+        const dirPath = dirname(filePath)
+
+        console.log('  <fs-to-xml>')
+        console.log(`    <input>fs-to-xml ${filePath}</input>`)
+
+        // Build XML structure from path
+        const pathParts = dirPath
+          .split('/')
+          .filter(part => part && part !== '.')
+
+        // Output nested XML tags
+        let indent = '    '
+        pathParts.forEach(part => {
+          console.log(`${indent}<${part}>`)
+          indent += '  '
+        })
+
+        // Output content
+        console.log(`${indent}${content.replace(/\n$/, '')}`)
+
+        // Close nested XML tags
+        for (let i = pathParts.length - 1; i >= 0; i--) {
+          indent = indent.slice(0, -2)
+          console.log(`${indent}</${pathParts[i]}>`)
+        }
+
+        console.log('    <success code="0" />')
+        console.log('  </fs-to-xml>')
+        global.lastExitCode = 0
+      } catch (error: any) {
+        console.log('  <fs-to-xml>')
+        console.log(`    <input>fs-to-xml ${filePath}</input>`)
+        console.log(`    <stderr>Error reading file: ${error.message}</stderr>`)
+        console.log('    <failure code="1" />')
+        console.log('  </fs-to-xml>')
+        global.lastExitCode = 1
+      }
+      return
+    }
+
+    // Regular command handling
     if (!commandText) {
-      commandText = reconstructCommand(node, isFs2xml)
+      commandText = reconstructCommand(node)
     }
 
     const result = executeCommand(commandText)
     const commandName = node.name?.text ? basename(node.name.text) : 'unknown'
 
     console.log(`  <${commandName}>`)
-    // For fs-to-xml, show the original command in input, not the transformed one
-    const displayCommand = isFs2xml
-      ? reconstructCommand(node, false)
-      : commandText
-    console.log(`    <input>${displayCommand}</input>`)
+    console.log(`    <input>${commandText}</input>`)
 
     const trimmedStdout = result.stdout.replace(/\n$/, '')
     if (trimmedStdout === '') {
@@ -185,26 +244,11 @@ function processASTNode(
   }
 }
 
-function reconstructCommand(node: any, transformFsToXml = false): string {
+function reconstructCommand(node: any): string {
   const parts: string[] = []
 
   if (node.name?.text) {
-    if (transformFsToXml && node.name.text === 'fs-to-xml') {
-      // Replace fs-to-xml with the current executable
-      // process.argv[0] is node, process.argv[1] is the CLI script path
-      const cliPath = process.argv[1]
-      if (cliPath && cliPath.endsWith('.js')) {
-        // We're running the CLI directly
-        parts.push(cliPath)
-      } else {
-        // We're running via shebang, need to find the actual CLI
-        // The shebang line contains the path to the CLI
-        parts.push('./dist/cli.js')
-      }
-      parts.push('--no-shebang')
-    } else {
-      parts.push(node.name.text)
-    }
+    parts.push(node.name.text)
   }
 
   if (node.suffix) {
@@ -236,22 +280,12 @@ async function main() {
     .description('FS to XML CLI - A simple shebang interpreter')
     .version(packageJson.version)
     .argument('<file>', 'script file to process')
-    .option(
-      '--no-shebang',
-      'Process file directly without shebang interpretation',
-    )
-    .action((file, options) => {
+    .action(file => {
       try {
-        // Handle --no-shebang mode for markdown files
-        if (!options.shebang) {
-          const ext = extname(file)
-          if (ext !== '.md') {
-            console.error(
-              `Error: --no-shebang mode only supports .md files, got ${ext || 'no extension'}`,
-            )
-            process.exit(1)
-          }
+        const ext = extname(file)
 
+        // Handle markdown files directly
+        if (ext === '.md') {
           const content = readFileSync(file, 'utf8')
           const dirPath = dirname(file)
 
@@ -260,12 +294,8 @@ async function main() {
             .split('/')
             .filter(part => part && part !== '.')
 
-          console.log('<command>')
-          console.log('  <fs-to-xml>')
-          console.log(`    <input>fs-to-xml ${file}</input>`)
-
-          // Create nested XML tags
-          let indent = '    '
+          // Output nested XML tags
+          let indent = ''
           pathParts.forEach(part => {
             console.log(`${indent}<${part}>`)
             indent += '  '
@@ -279,10 +309,6 @@ async function main() {
             indent = indent.slice(0, -2)
             console.log(`${indent}</${pathParts[i]}>`)
           }
-
-          console.log('    <success code="0" />')
-          console.log('  </fs-to-xml>')
-          console.log('</command>')
           return
         }
 

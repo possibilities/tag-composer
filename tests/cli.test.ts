@@ -382,19 +382,23 @@ describe('FS to XML', () => {
         fs-to-xml tests/fixtures/rules/test.md
       `)
 
-      // We expect the inner XML from the --no-shebang mode to be wrapped as stdout
-      expect(output.trim()).toContain('<command>')
-      expect(output.trim()).toContain('<fs-to-xml>')
-      expect(output.trim()).toContain(
-        '<input>fs-to-xml tests/fixtures/rules/test.md</input>',
-      )
-      expect(output.trim()).toContain('<tests>')
-      expect(output.trim()).toContain('<fixtures>')
-      expect(output.trim()).toContain('<rules>')
-      expect(output.trim()).toContain('This is a test rule file.')
-      expect(output.trim()).toContain('</rules>')
-      expect(output.trim()).toContain('</fixtures>')
-      expect(output.trim()).toContain('</tests>')
+      const expected = dedent`
+        <command>
+          <fs-to-xml>
+            <input>fs-to-xml tests/fixtures/rules/test.md</input>
+            <tests>
+              <fixtures>
+                <rules>
+                  This is a test rule file.
+                </rules>
+              </fixtures>
+            </tests>
+            <success code="0" />
+          </fs-to-xml>
+        </command>
+      `
+
+      expect(output.trim()).toBe(expected)
     })
 
     it('processes markdown file with nested directories', () => {
@@ -403,21 +407,25 @@ describe('FS to XML', () => {
         fs-to-xml tests/fixtures/rules/foo/bar.md
       `)
 
-      // We expect the inner XML from the --no-shebang mode to be wrapped as stdout
-      expect(output.trim()).toContain('<command>')
-      expect(output.trim()).toContain('<fs-to-xml>')
-      expect(output.trim()).toContain(
-        '<input>fs-to-xml tests/fixtures/rules/foo/bar.md</input>',
-      )
-      expect(output.trim()).toContain('<tests>')
-      expect(output.trim()).toContain('<fixtures>')
-      expect(output.trim()).toContain('<rules>')
-      expect(output.trim()).toContain('<foo>')
-      expect(output.trim()).toContain('This is a nested rule file.')
-      expect(output.trim()).toContain('</foo>')
-      expect(output.trim()).toContain('</rules>')
-      expect(output.trim()).toContain('</fixtures>')
-      expect(output.trim()).toContain('</tests>')
+      const expected = dedent`
+        <command>
+          <fs-to-xml>
+            <input>fs-to-xml tests/fixtures/rules/foo/bar.md</input>
+            <tests>
+              <fixtures>
+                <rules>
+                  <foo>
+                    This is a nested rule file.
+                  </foo>
+                </rules>
+              </fixtures>
+            </tests>
+            <success code="0" />
+          </fs-to-xml>
+        </command>
+      `
+
+      expect(output.trim()).toBe(expected)
     })
 
     it('fails when fs-to-xml is used in a pipe', () => {
@@ -448,17 +456,82 @@ describe('FS to XML', () => {
       expect(error).toContain('fs-to-xml cannot be used with logical operators')
     })
 
-    it('errors when file is not markdown in --no-shebang mode', () => {
-      let error = ''
-      try {
-        execSync('./dist/cli.js --no-shebang tests/fixtures/rules/test.txt', {
-          encoding: 'utf8',
-        })
-      } catch (e: any) {
-        error = e.stderr
-      }
+    it('handles fs-to-xml with non-markdown file', () => {
+      const output = invokeScript(dedent`
+        #!/usr/bin/env ./dist/cli.js
+        fs-to-xml tests/fixtures/rules/test.txt
+      `)
 
-      expect(error).toContain('--no-shebang mode only supports .md files')
+      const expected = dedent`
+        <command>
+          <fs-to-xml>
+            <input>fs-to-xml tests/fixtures/rules/test.txt</input>
+            <stderr>Error: fs-to-xml only supports .md files, got .txt</stderr>
+            <failure code="1" />
+          </fs-to-xml>
+        </command>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+
+    it('handles fs-to-xml with missing file', () => {
+      const output = invokeScript(dedent`
+        #!/usr/bin/env ./dist/cli.js
+        fs-to-xml tests/fixtures/rules/nonexistent.md
+      `)
+
+      const expected = dedent`
+        <command>
+          <fs-to-xml>
+            <input>fs-to-xml tests/fixtures/rules/nonexistent.md</input>
+            <stderr>Error reading file: ENOENT: no such file or directory, open 'tests/fixtures/rules/nonexistent.md'</stderr>
+            <failure code="1" />
+          </fs-to-xml>
+        </command>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+  })
+
+  describe('Direct markdown file processing', () => {
+    it('processes markdown file directly', () => {
+      const output = execSync('./dist/cli.js tests/fixtures/rules/test.md', {
+        encoding: 'utf8',
+      })
+
+      const expected = dedent`
+        <tests>
+          <fixtures>
+            <rules>
+              This is a test rule file.
+            </rules>
+          </fixtures>
+        </tests>
+      `
+
+      expect(output.trim()).toBe(expected)
+    })
+
+    it('processes nested markdown file directly', () => {
+      const output = execSync('./dist/cli.js tests/fixtures/rules/foo/bar.md', {
+        encoding: 'utf8',
+      })
+
+      const expected = dedent`
+        <tests>
+          <fixtures>
+            <rules>
+              <foo>
+                This is a nested rule file.
+              </foo>
+            </rules>
+          </fixtures>
+        </tests>
+      `
+
+      expect(output.trim()).toBe(expected)
     })
   })
 })

@@ -313,30 +313,65 @@ describe('FS to XML', () => {
   it('captures stderr output when commands fail', () => {
     const output = invokeScript(dedent`
       #!/usr/bin/env ./dist/cli.js
-      ls /nonexistent-directory-12345
+      ./test-helpers/error-generator.sh --exit-code 2 --stderr "Command failed"
     `)
 
-    // The exact stderr message may vary by system, so we just check structure
-    expect(output).toContain('<ls>')
-    expect(output).toContain('<input>ls /nonexistent-directory-12345</input>')
-    expect(output).toContain('<stdout />')
-    expect(output).toContain('<stderr>')
-    expect(output).toContain('</stderr>')
-    expect(output).toContain('<exit>2</exit>') // ls typically returns 2 for "cannot access"
-    expect(output).toContain('</ls>')
+    const expected = dedent`
+      <command>
+        <./test-helpers/error-generator.sh>
+          <input>./test-helpers/error-generator.sh --exit-code 2 --stderr "Command failed"</input>
+          <stdout />
+          <stderr>Command failed</stderr>
+          <exit>2</exit>
+        </./test-helpers/error-generator.sh>
+      </command>
+    `
+
+    expect(output.trim()).toBe(expected)
   })
 
   it('shows stderr in pipe operations', () => {
     const output = invokeScript(dedent`
       #!/usr/bin/env ./dist/cli.js
-      echo test | grep --invalid-option pattern
+      echo test | ./test-helpers/error-generator.sh --exit-code 2 --stderr "Invalid option" --stdout "filtered"
     `)
 
-    expect(output).toContain('<command>')
-    expect(output).toContain('<echo>')
-    expect(output).toContain('<grep>')
-    expect(output).toContain('<stderr>')
-    expect(output).toContain('</stderr>')
-    expect(output).toContain('<exit>2</exit>') // grep returns 2 for errors
+    const expected = dedent`
+      <command>
+        <echo>
+          <input>echo test</input>
+          <exit>0</exit>
+        </echo>
+        <pipe-operator />
+        <./test-helpers/error-generator.sh>
+          <input>./test-helpers/error-generator.sh --exit-code 2 --stderr "Invalid option" --stdout filtered</input>
+          <stdout>filtered</stdout>
+          <stderr>Invalid option</stderr>
+          <exit>2</exit>
+        </./test-helpers/error-generator.sh>
+      </command>
+    `
+
+    expect(output.trim()).toBe(expected)
+  })
+
+  it('shows both stdout and stderr with custom exit code', () => {
+    const output = invokeScript(dedent`
+      #!/usr/bin/env ./dist/cli.js
+      ./test-helpers/error-generator.sh --exit-code 42 --stdout "Normal output" --stderr "Error output"
+    `)
+
+    const expected = dedent`
+      <command>
+        <./test-helpers/error-generator.sh>
+          <input>./test-helpers/error-generator.sh --exit-code 42 --stdout "Normal output" --stderr "Error output"</input>
+          <stdout>Normal output</stdout>
+          <stderr>Error output</stderr>
+          <exit>42</exit>
+        </./test-helpers/error-generator.sh>
+      </command>
+    `
+
+    expect(output.trim()).toBe(expected)
   })
 })

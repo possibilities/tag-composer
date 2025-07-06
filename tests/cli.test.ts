@@ -243,16 +243,16 @@ describe('FS to XML', () => {
   it('executes second command when first fails with OR operator', () => {
     const output = invokeScript(dedent`
       #!/usr/bin/env ./dist/cli.js
-      exit 1 || echo bar
+      false || echo bar
     `)
 
     const expected = dedent`
       <command>
-        <exit>
-          <input>exit 1</input>
+        <false>
+          <input>false</input>
           <stdout />
           <exit>1</exit>
-        </exit>
+        </false>
         <logical-or-operator />
         <echo>
           <input>echo bar</input>
@@ -308,5 +308,35 @@ describe('FS to XML', () => {
     `
 
     expect(output.trim()).toBe(expected)
+  })
+
+  it('captures stderr output when commands fail', () => {
+    const output = invokeScript(dedent`
+      #!/usr/bin/env ./dist/cli.js
+      ls /nonexistent-directory-12345
+    `)
+
+    // The exact stderr message may vary by system, so we just check structure
+    expect(output).toContain('<ls>')
+    expect(output).toContain('<input>ls /nonexistent-directory-12345</input>')
+    expect(output).toContain('<stdout />')
+    expect(output).toContain('<stderr>')
+    expect(output).toContain('</stderr>')
+    expect(output).toContain('<exit>2</exit>') // ls typically returns 2 for "cannot access"
+    expect(output).toContain('</ls>')
+  })
+
+  it('shows stderr in pipe operations', () => {
+    const output = invokeScript(dedent`
+      #!/usr/bin/env ./dist/cli.js
+      echo test | grep --invalid-option pattern
+    `)
+
+    expect(output).toContain('<command>')
+    expect(output).toContain('<echo>')
+    expect(output).toContain('<grep>')
+    expect(output).toContain('<stderr>')
+    expect(output).toContain('</stderr>')
+    expect(output).toContain('<exit>2</exit>') // grep returns 2 for errors
   })
 })

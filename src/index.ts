@@ -82,6 +82,12 @@ function processASTNode(
         const commandName = cmd.name?.text || 'unknown'
         console.log(`  <${commandName}>`)
         console.log(`    <input>${commandText}</input>`)
+
+        const trimmedStderr = result.stderr.replace(/\n$/, '')
+        if (trimmedStderr) {
+          console.log(`    <stderr>${trimmedStderr}</stderr>`)
+        }
+
         console.log(`    <exit>${lastExitCode}</exit>`)
         console.log(`  </${commandName}>`)
       } else {
@@ -104,6 +110,12 @@ function processASTNode(
             console.log(`    <stdout>${trimmedOutput}</stdout>`)
           }
         }
+
+        const trimmedStderr = result.stderr.replace(/\n$/, '')
+        if (trimmedStderr) {
+          console.log(`    <stderr>${trimmedStderr}</stderr>`)
+        }
+
         console.log(`    <exit>${lastExitCode}</exit>`)
         console.log(`  </${commandName}>`)
       }
@@ -127,11 +139,16 @@ function processASTNode(
     console.log(`  <${commandName}>`)
     console.log(`    <input>${commandText}</input>`)
 
-    const trimmedOutput = result.stdout.replace(/\n$/, '')
-    if (trimmedOutput === '') {
+    const trimmedStdout = result.stdout.replace(/\n$/, '')
+    if (trimmedStdout === '') {
       console.log('    <stdout />')
     } else {
-      console.log(`    <stdout>${trimmedOutput}</stdout>`)
+      console.log(`    <stdout>${trimmedStdout}</stdout>`)
+    }
+
+    const trimmedStderr = result.stderr.replace(/\n$/, '')
+    if (trimmedStderr) {
+      console.log(`    <stderr>${trimmedStderr}</stderr>`)
     }
 
     console.log(`    <exit>${result.exitCode}</exit>`)

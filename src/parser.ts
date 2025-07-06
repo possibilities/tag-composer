@@ -13,6 +13,10 @@ interface CommandLine {
 
 type ParsedLine = TextLine | CommandLine
 
+function validateCommand(_ast: any): void {
+  console.log('TODO implement validateCommand')
+}
+
 export function parseContent(input: string): ParsedLine[] {
   return input
     .split('\n')
@@ -35,6 +39,9 @@ export function parseContent(input: string): ParsedLine[] {
             `Parse error at line ${index + 1}: Invalid bash syntax - ${error instanceof Error ? error.message : 'Unknown error'}`,
           )
         }
+
+        // Validate the command AST
+        validateCommand(ast)
 
         return {
           type: 'command',

@@ -4,12 +4,12 @@ import { parseContent } from '../src/parser'
 
 describe('parseContent', () => {
   it('should parse text', () => {
-    const input = dedent`
+    const script = dedent`
       hello world
       goodbye world
     `
-    const result = parseContent(input)
-    expect(result).toEqual([
+    const parsed = parseContent(script)
+    expect(parsed).toEqual([
       {
         type: 'text',
         content: 'hello world',
@@ -22,15 +22,15 @@ describe('parseContent', () => {
   })
 
   it('should parse commands starting with !!', () => {
-    const input = dedent`
+    const script = dedent`
       hello world
       !!echo "test"
       goodbye world
       !!command-for-integration-tests.sh
     `
-    const result = parseContent(input)
+    const parsed = parseContent(script)
 
-    expect(result).toEqual([
+    expect(parsed).toEqual([
       {
         type: 'text',
         content: 'hello world',
@@ -81,44 +81,44 @@ describe('parseContent', () => {
   })
 
   it('should throw error for command with no content after !!', () => {
-    const input = dedent`
+    const script = dedent`
       !!
       hello
     `
-    expect(() => parseContent(input)).toThrow(
+    expect(() => parseContent(script)).toThrow(
       'Parse error at line 1: Command cannot be empty',
     )
   })
 
   it('should throw error for command with only whitespace', () => {
-    const input = dedent`
+    const script = dedent`
       hello
       !!   
       world
     `
-    expect(() => parseContent(input)).toThrow(
+    expect(() => parseContent(script)).toThrow(
       'Parse error at line 2: Command cannot be empty',
     )
   })
 
   it('should throw error for invalid bash syntax', () => {
-    const input = dedent`
+    const script = dedent`
       hello
       !!echo "unclosed quote
       world
     `
-    expect(() => parseContent(input)).toThrow(
+    expect(() => parseContent(script)).toThrow(
       /Parse error at line 2: Invalid bash syntax/,
     )
   })
 
   it('should parse complex command with full AST', () => {
-    const input = dedent`
+    const script = dedent`
       !!command-for-integration-tests.sh --exit-code 42 --stdout "hello world" --stderr "error message"
     `
-    const result = parseContent(input)
+    const parsed = parseContent(script)
 
-    expect(result).toEqual([
+    expect(parsed).toEqual([
       {
         type: 'command',
         content:

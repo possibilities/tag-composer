@@ -207,7 +207,11 @@ async function main() {
     .description('FS to XML CLI - A simple shebang interpreter')
     .version(packageJson.version)
     .argument('<file>', 'script file to process')
-    .action(file => {
+    .option(
+      '--shebang',
+      'Indicates the tool is being used as a shebang interpreter',
+    )
+    .action((file, _options) => {
       try {
         const content = readFileSync(file, 'utf8')
         const lines = content.split('\n')

@@ -25,7 +25,7 @@ const invokeScript = (scriptContent: string): string => {
 describe('FS to XML', () => {
   it('outputs simple echo command as XML', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env -S ./dist/cli.js --shebang
       echo "foo bar"
     `)
 
@@ -44,7 +44,7 @@ describe('FS to XML', () => {
 
   it('skips comment lines', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env -S ./dist/cli.js --shebang
       # This is a comment
       echo hello
       # Another comment
@@ -65,7 +65,7 @@ describe('FS to XML', () => {
 
   it('outputs multiple echo commands', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env -S ./dist/cli.js --shebang
       echo first
       echo second
       echo "third test"
@@ -100,7 +100,7 @@ describe('FS to XML', () => {
 
   it('handles empty lines', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env -S ./dist/cli.js --shebang
       echo first
       
       echo second
@@ -128,7 +128,7 @@ describe('FS to XML', () => {
 
   it('handles echo with no arguments', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env -S ./dist/cli.js --shebang
       echo
     `)
 
@@ -147,7 +147,7 @@ describe('FS to XML', () => {
 
   it('handles echo with multiple arguments', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env -S ./dist/cli.js --shebang
       echo foo bar baz
     `)
 
@@ -166,7 +166,7 @@ describe('FS to XML', () => {
 
   it('outputs commands with logical AND operator', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env -S ./dist/cli.js --shebang
       echo foo && echo bar
     `)
 
@@ -191,7 +191,7 @@ describe('FS to XML', () => {
 
   it('outputs multiple commands with logical AND operators', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env -S ./dist/cli.js --shebang
       echo foo && echo bar && echo baz
     `)
 
@@ -222,7 +222,7 @@ describe('FS to XML', () => {
 
   it('outputs commands with logical OR operator', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env -S ./dist/cli.js --shebang
       echo foo || echo bar
     `)
 
@@ -242,7 +242,7 @@ describe('FS to XML', () => {
 
   it('executes second command when first fails with OR operator', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env -S ./dist/cli.js --shebang
       false || echo bar
     `)
 
@@ -267,7 +267,7 @@ describe('FS to XML', () => {
 
   it('handles multiple OR operators with first command succeeding', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env -S ./dist/cli.js --shebang
       echo foo || exit 1 || echo bar
     `)
 
@@ -288,7 +288,7 @@ describe('FS to XML', () => {
 
   it('handles pipe operations', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env -S ./dist/cli.js --shebang
       echo foo | grep foo
     `)
 
@@ -312,7 +312,7 @@ describe('FS to XML', () => {
 
   it('captures stderr output when commands fail', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env -S ./dist/cli.js --shebang
       ./test-helpers/error-generator.sh --exit-code 2 --stderr "Command failed"
     `)
 
@@ -332,7 +332,7 @@ describe('FS to XML', () => {
 
   it('shows stderr in pipe operations', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env -S ./dist/cli.js --shebang
       echo test | ./test-helpers/error-generator.sh --exit-code 2 --stderr "Invalid option" --stdout "filtered"
     `)
 
@@ -357,7 +357,7 @@ describe('FS to XML', () => {
 
   it('shows both stdout and stderr with custom exit code', () => {
     const output = invokeScript(dedent`
-      #!/usr/bin/env ./dist/cli.js
+      #!/usr/bin/env -S ./dist/cli.js --shebang
       ./test-helpers/error-generator.sh --exit-code 42 --stdout "Normal output" --stderr "Error output"
     `)
 

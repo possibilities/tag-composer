@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { validateCommand } from '../src/validate-command'
+import { validateCommand, validateCommands } from '../src/validate-commands'
 
 describe('validateCommand', () => {
   it('should accept a simple command', () => {
@@ -330,6 +330,111 @@ describe('validateCommand', () => {
     }
     expect(() => validateCommand(ast)).toThrow(
       'Only simple commands are allowed, found Function',
+    )
+  })
+})
+
+describe('validateCommands', () => {
+  it('should validate flat array of commands', () => {
+    const lines = [
+      {
+        type: 'text',
+        content: 'hello',
+      },
+      {
+        type: 'command',
+        content: 'echo test',
+        commandName: 'echo',
+        ast: {
+          type: 'Script',
+          commands: [
+            {
+              type: 'Command',
+              name: { text: 'echo', type: 'Word' },
+              suffix: [{ text: 'test', type: 'Word' }],
+            },
+          ],
+        },
+      },
+    ]
+
+    expect(() => validateCommands(lines)).not.toThrow()
+  })
+
+  it('should validate nested structures', () => {
+    const lines = [
+      {
+        type: 'section',
+        name: 'Main',
+        children: [
+          {
+            type: 'command',
+            content: 'echo nested',
+            commandName: 'echo',
+            ast: {
+              type: 'Script',
+              commands: [
+                {
+                  type: 'Command',
+                  name: { text: 'echo', type: 'Word' },
+                  suffix: [{ text: 'nested', type: 'Word' }],
+                },
+              ],
+            },
+          },
+          {
+            type: 'subsection',
+            name: 'Sub',
+            children: [
+              {
+                type: 'command',
+                content: 'ls -la',
+                commandName: 'ls',
+                ast: {
+                  type: 'Script',
+                  commands: [
+                    {
+                      type: 'Command',
+                      name: { text: 'ls', type: 'Word' },
+                      suffix: [{ text: '-la', type: 'Word' }],
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+    ]
+
+    expect(() => validateCommands(lines)).not.toThrow()
+  })
+
+  it('should throw error for invalid commands in nested structures', () => {
+    const lines = [
+      {
+        type: 'section',
+        children: [
+          {
+            type: 'command',
+            content: 'echo hello | grep hello',
+            commandName: 'Pipeline',
+            ast: {
+              type: 'Script',
+              commands: [
+                {
+                  type: 'Pipeline',
+                  commands: [],
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ]
+
+    expect(() => validateCommands(lines)).toThrow(
+      'Only simple commands are allowed, found Pipeline',
     )
   })
 })

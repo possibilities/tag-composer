@@ -1,19 +1,25 @@
 import bashParse from 'bash-parser'
-import { validateCommand } from './validate-command.js'
-import { executeCommand } from './execute-command.js'
+
+interface AstNode {
+  type: string
+  [key: string]: any
+}
 
 interface TextLine {
   type: 'text'
   content: string
+  children?: ParsedLine[]
 }
 
 interface CommandLine {
   type: 'command'
   content: string
   commandName: string
-  statusCode: number
-  stdout: string
-  stderr: string
+  ast?: AstNode
+  statusCode?: number
+  stdout?: string
+  stderr?: string
+  children?: ParsedLine[]
 }
 
 type ParsedLine = TextLine | CommandLine
@@ -40,30 +46,17 @@ export function parseContent(input: string): ParsedLine[] {
           )
         }
 
-        try {
-          validateCommand(ast)
-        } catch (error) {
-          throw new Error(
-            `Parse error at line ${index + 1}: ${error instanceof Error ? error.message : 'Unknown validation error'}`,
-          )
-        }
-
-        const result = executeCommand(line.substring(2))
-
-        const commandName = ast?.commands?.[0]?.name?.text
-        if (!commandName) {
-          throw new Error(
-            `Parse error at line ${index + 1}: Unable to extract command name from parsed AST`,
-          )
-        }
+        const firstCommand = ast?.commands?.[0]
+        const commandName =
+          firstCommand?.type === 'Command'
+            ? firstCommand.name?.text
+            : firstCommand?.type || 'unknown'
 
         const commandLine: CommandLine = {
           type: 'command',
           content: line.substring(2),
           commandName,
-          statusCode: result.statusCode,
-          stdout: result.stdout,
-          stderr: result.stderr,
+          ast,
         }
 
         return commandLine

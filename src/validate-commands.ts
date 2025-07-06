@@ -3,6 +3,13 @@ interface AstNode {
   [key: string]: any
 }
 
+interface ParsedLine {
+  type: string
+  ast?: AstNode
+  children?: ParsedLine[]
+  [key: string]: any
+}
+
 export function validateCommand(ast: AstNode): void {
   if (!ast || typeof ast !== 'object') {
     throw new Error('Invalid AST')
@@ -41,4 +48,18 @@ export function validateCommand(ast: AstNode): void {
       }
     }
   }
+}
+
+export function validateCommands(lines: ParsedLine[]): ParsedLine[] {
+  for (const line of lines) {
+    if (line.type === 'command' && line.ast) {
+      validateCommand(line.ast)
+    }
+
+    if (line.children && Array.isArray(line.children)) {
+      validateCommands(line.children)
+    }
+  }
+
+  return lines
 }

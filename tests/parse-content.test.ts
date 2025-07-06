@@ -1,6 +1,8 @@
 import dedent from 'dedent'
 import { describe, it, expect } from 'vitest'
 import { parseContent } from '../src/parse-content'
+import { validateCommands } from '../src/validate-commands'
+import { executeCommands } from '../src/execute-commands'
 import path from 'path'
 
 describe('parseContent', () => {
@@ -28,9 +30,14 @@ describe('parseContent', () => {
       !!echo "test"
       goodbye world
     `
-    const parsed = parseContent(script)
+    const parsed = executeCommands(validateCommands(parseContent(script)))
 
-    expect(parsed).toEqual([
+    const parsedWithoutAst = parsed.map(line => {
+      const { ast, ...rest } = line as any
+      return rest
+    })
+
+    expect(parsedWithoutAst).toEqual([
       {
         type: 'text',
         content: 'hello world',
@@ -63,7 +70,7 @@ describe('parseContent', () => {
   it('should throw error for command with only whitespace', () => {
     const script = dedent`
       hello
-      !!   
+      !!
       world
     `
     expect(() => parseContent(script)).toThrow(
@@ -90,9 +97,14 @@ describe('parseContent', () => {
     const script = dedent`
       !!${testScriptPath} --exit-code 42 --stdout "hello world" --stderr "error message"
     `
-    const parsed = parseContent(script)
+    const parsed = executeCommands(validateCommands(parseContent(script)))
 
-    expect(parsed).toEqual([
+    const parsedWithoutAst = parsed.map(line => {
+      const { ast, ...rest } = line as any
+      return rest
+    })
+
+    expect(parsedWithoutAst).toEqual([
       {
         type: 'command',
         content: `${testScriptPath} --exit-code 42 --stdout "hello world" --stderr "error message"`,
@@ -108,8 +120,8 @@ describe('parseContent', () => {
     const script = dedent`
       !!echo hello | grep hello
     `
-    expect(() => parseContent(script)).toThrow(
-      'Parse error at line 1: Only simple commands are allowed, found Pipeline',
+    expect(() => validateCommands(parseContent(script))).toThrow(
+      'Only simple commands are allowed, found Pipeline',
     )
   })
 })

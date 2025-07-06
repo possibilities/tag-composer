@@ -3,6 +3,7 @@ import { readFileSync } from 'fs'
 import { execSync } from 'child_process'
 import packageJson from '../package.json' assert { type: 'json' }
 import parse from 'bash-parser'
+import { validateAST } from './ast-validator.js'
 
 async function main() {
   const program = new Command()
@@ -31,6 +32,16 @@ async function main() {
 
           try {
             const ast = parse(line)
+
+            try {
+              validateAST(ast)
+            } catch (validationError: any) {
+              console.error(
+                `Validation error on line ${index + 1}: ${validationError.message}`,
+              )
+              process.exit(1)
+            }
+
             const commandName = ast.commands[0]?.name?.text || 'unknown'
 
             const output = execSync(line, { encoding: 'utf8' })

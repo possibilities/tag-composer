@@ -478,27 +478,33 @@ describe('FS to XML', () => {
     it('handles fs-to-xml with non-markdown file', () => {
       writeTestFile('rules/test.txt', 'This is a text file.')
 
-      const output = invokeScript(dedent`
-        #!/usr/bin/env ${cliPath}
-        fs-to-xml rules/test.txt
-      `)
+      let error = ''
+      try {
+        invokeScript(dedent`
+          #!/usr/bin/env ${cliPath}
+          fs-to-xml rules/test.txt
+        `)
+      } catch (e: any) {
+        error = e.stderr || e.message
+      }
 
-      const expected = dedent`
-      `
-
-      expect(output.trim()).toBe(expected)
+      expect(error).toContain('Error: fs-to-xml only supports .md files')
+      expect(error).toContain('.txt')
     })
 
     it('handles fs-to-xml with missing file', () => {
-      const output = invokeScript(dedent`
-        #!/usr/bin/env ${cliPath}
-        fs-to-xml rules/nonexistent.md
-      `)
+      let error = ''
+      try {
+        invokeScript(dedent`
+          #!/usr/bin/env ${cliPath}
+          fs-to-xml rules/nonexistent.md
+        `)
+      } catch (e: any) {
+        error = e.stderr || e.message
+      }
 
-      const expected = dedent`
-      `
-
-      expect(output.trim()).toBe(expected)
+      expect(error).toContain('Error: fs-to-xml failed')
+      expect(error).toContain('ENOENT')
     })
   })
 

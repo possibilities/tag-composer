@@ -154,6 +154,9 @@ function processASTNode(
           )
           console.log('    <failure code="1" />')
           console.log('  </fs-to-xml>')
+        } else {
+          console.error('Error: fs-to-xml requires a file path')
+          process.exit(1)
         }
         global.lastExitCode = 1
         return
@@ -169,6 +172,11 @@ function processASTNode(
           )
           console.log('    <failure code="1" />')
           console.log('  </fs-to-xml>')
+        } else {
+          console.error(
+            `Error: fs-to-xml only supports .md files, got ${ext || 'no extension'}`,
+          )
+          process.exit(1)
         }
         global.lastExitCode = 1
         return
@@ -229,6 +237,9 @@ function processASTNode(
           )
           console.log('    <failure code="1" />')
           console.log('  </fs-to-xml>')
+        } else {
+          console.error(`Error: fs-to-xml failed - ${error.message}`)
+          process.exit(1)
         }
         global.lastExitCode = 1
       }

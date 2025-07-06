@@ -1,14 +1,14 @@
 import dedent from 'dedent'
 import { describe, it, expect } from 'vitest'
-import { parse } from '../src/parser'
+import { parseContent } from '../src/parse-content'
 
-describe('parse', () => {
+describe('parseContent', () => {
   it('should parse text', () => {
     const script = dedent`
       hello world
       goodbye world
     `
-    const parsed = parse(script)
+    const parsed = parseContent(script)
     expect(parsed).toEqual([
       {
         type: 'text',
@@ -28,7 +28,7 @@ describe('parse', () => {
       goodbye world
       !!command-for-integration-tests.sh
     `
-    const parsed = parse(script)
+    const parsed = parseContent(script)
 
     expect(parsed).toEqual([
       {
@@ -85,7 +85,7 @@ describe('parse', () => {
       !!
       hello
     `
-    expect(() => parse(script)).toThrow(
+    expect(() => parseContent(script)).toThrow(
       'Parse error at line 1: Command cannot be empty',
     )
   })
@@ -96,7 +96,7 @@ describe('parse', () => {
       !!   
       world
     `
-    expect(() => parse(script)).toThrow(
+    expect(() => parseContent(script)).toThrow(
       'Parse error at line 2: Command cannot be empty',
     )
   })
@@ -107,7 +107,7 @@ describe('parse', () => {
       !!echo "unclosed quote
       world
     `
-    expect(() => parse(script)).toThrow(
+    expect(() => parseContent(script)).toThrow(
       /Parse error at line 2: Invalid bash syntax/,
     )
   })
@@ -116,7 +116,7 @@ describe('parse', () => {
     const script = dedent`
       !!command-for-integration-tests.sh --exit-code 42 --stdout "hello world" --stderr "error message"
     `
-    const parsed = parse(script)
+    const parsed = parseContent(script)
 
     expect(parsed).toEqual([
       {
@@ -169,7 +169,7 @@ describe('parse', () => {
     const script = dedent`
       !!echo hello | grep hello
     `
-    expect(() => parse(script)).toThrow(
+    expect(() => parseContent(script)).toThrow(
       'Parse error at line 1: Only simple commands are allowed, found Pipeline',
     )
   })

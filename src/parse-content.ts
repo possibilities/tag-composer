@@ -18,7 +18,7 @@ interface CommandLine {
 
 type ParsedLine = TextLine | CommandLine
 
-export function parse(input: string, execute = false): ParsedLine[] {
+export function parseContent(input: string, execute = false): ParsedLine[] {
   return input
     .split('\n')
     .filter(line => line.length > 0)

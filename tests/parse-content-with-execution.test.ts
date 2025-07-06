@@ -1,9 +1,9 @@
 import dedent from 'dedent'
 import { describe, it, expect } from 'vitest'
-import { parse } from '../src/parser'
+import { parseContent } from '../src/parse-content'
 import path from 'path'
 
-describe('parse with execution', () => {
+describe('parseContent with execution', () => {
   const testScriptPath = path.join(
     process.cwd(),
     'tests/helpers/command-for-integration-tests.sh',
@@ -13,7 +13,7 @@ describe('parse with execution', () => {
     const script = dedent`
       !!echo "test output"
     `
-    const parsed = parse(script, true)
+    const parsed = parseContent(script, true)
 
     expect(parsed).toEqual([
       {
@@ -31,7 +31,7 @@ describe('parse with execution', () => {
     const script = dedent`
       !!echo "test output"
     `
-    const parsed = parse(script, false)
+    const parsed = parseContent(script, false)
 
     expect(parsed).toEqual([
       {
@@ -46,7 +46,7 @@ describe('parse with execution', () => {
     const script = dedent`
       !!echo "test output"
     `
-    const parsed = parse(script)
+    const parsed = parseContent(script)
 
     expect(parsed).toEqual([
       {
@@ -61,7 +61,7 @@ describe('parse with execution', () => {
     const script = dedent`
       !!${testScriptPath} --exit-code 42 --stdout "hello" --stderr "error"
     `
-    const parsed = parse(script, true)
+    const parsed = parseContent(script, true)
 
     expect(parsed).toEqual([
       {
@@ -82,7 +82,7 @@ describe('parse with execution', () => {
       More text
       !!echo "second"
     `
-    const parsed = parse(script, true)
+    const parsed = parseContent(script, true)
 
     expect(parsed).toEqual([
       {

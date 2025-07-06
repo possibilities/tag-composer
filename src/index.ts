@@ -1,7 +1,7 @@
 import { Command } from 'commander'
 import { readFileSync } from 'fs'
-import { basename } from 'path'
 import packageJson from '../package.json' assert { type: 'json' }
+import parse from 'bash-parser'
 
 async function main() {
   const program = new Command()
@@ -19,12 +19,24 @@ async function main() {
         const firstLine = lines[0]
         const startsWithShebang = firstLine.startsWith('#!')
 
-        const contentToDisplay = startsWithShebang
-          ? lines.slice(1).join('\n')
-          : content
+        const linesToProcess = startsWithShebang ? lines.slice(1) : lines
 
-        console.log(`=== Content from ${basename(file)} ===`)
-        console.log(contentToDisplay)
+        linesToProcess.forEach((line, index) => {
+          const trimmedLine = line.trim()
+
+          if (trimmedLine === '' || trimmedLine.startsWith('#')) {
+            return
+          }
+
+          try {
+            const ast = parse(line)
+            console.log(JSON.stringify(ast, null, 2))
+          } catch (parseError: any) {
+            console.error(
+              `Error parsing line ${index + 1}: ${parseError.message}`,
+            )
+          }
+        })
       } catch (error: any) {
         console.error(`Error reading file '${file}':`, error.message)
         process.exit(1)

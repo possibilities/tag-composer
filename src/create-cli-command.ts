@@ -1,7 +1,8 @@
 import { Command } from 'commander'
 import packageJson from '../package.json' assert { type: 'json' }
-import { existsSync } from 'fs'
+import { existsSync, readFileSync } from 'fs'
 import { extname } from 'path'
+import { runPipeline } from './pipeline.js'
 
 export function createCliCommand(): Command {
   const program = new Command()
@@ -22,6 +23,10 @@ export function createCliCommand(): Command {
           `Error: File '${file}' is not a markdown file (must end with .md)`,
         )
       }
+
+      const content = readFileSync(file, 'utf-8')
+      const output = runPipeline(content, 'tag-composer')
+      process.stdout.write(output)
     })
 
   return program

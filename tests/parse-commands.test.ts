@@ -1,17 +1,99 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { parseCommand, parseCommands } from '../src/parse-commands'
 import { UnparsedCommandLine } from '../src/types'
 import { existsSync } from 'fs'
 
 vi.mock('fs', () => ({
   existsSync: vi.fn(),
+  readFileSync: vi.fn(),
 }))
+
+// Mock the createCliCommand to avoid package.json import issues
+vi.mock('../src/create-cli-command', async () => {
+  const actual = await vi.importActual('../src/create-cli-command')
+  const { Command } = await import('commander')
+  const { existsSync, readFileSync } = await import('fs')
+  const { extname } = await import('path')
+
+  return {
+    ...actual,
+    createCliCommand: () => {
+      const program = new Command()
+
+      program
+        .name('tag-composer')
+        .description('Tag Composer CLI')
+        .version('0.1.0')
+        .argument('<file>', 'markdown file to process')
+        .allowExcessArguments(false)
+        .action((file: string) => {
+          if (!existsSync(file)) {
+            throw new Error(`Error: File '${file}' not found`)
+          }
+
+          if (extname(file).toLowerCase() !== '.md') {
+            throw new Error(
+              `Error: File '${file}' is not a markdown file (must end with .md)`,
+            )
+          }
+        })
+
+      return program
+    },
+  }
+})
 
 describe('parseCommand', () => {
   const mockExistsSync = existsSync as unknown as ReturnType<typeof vi.fn>
 
+  // Store original values
+  const originalStdout = {
+    columns: process.stdout.columns,
+    isTTY: process.stdout.isTTY,
+    rows: process.stdout.rows,
+  }
+  const originalStderr = {
+    columns: process.stderr.columns,
+    isTTY: process.stderr.isTTY,
+    rows: process.stderr.rows,
+    write: process.stderr.write,
+  }
+  const originalStdoutWrite = process.stdout.write
+
   beforeEach(() => {
     vi.clearAllMocks()
+
+    // Mock stdout
+    process.stdout.columns = 80
+    process.stdout.isTTY = true
+    process.stdout.rows = 24
+
+    // Mock stderr
+    process.stderr.columns = 80
+    process.stderr.isTTY = true
+    process.stderr.rows = 24
+
+    // Mock write functions
+    process.stderr.write = vi.fn(() => true) as any
+    process.stdout.write = vi.fn(() => true) as any
+  })
+
+  afterEach(() => {
+    // Restore stdout
+    process.stdout.columns = originalStdout.columns
+    process.stdout.isTTY = originalStdout.isTTY
+    process.stdout.rows = originalStdout.rows
+
+    // Restore stderr
+    process.stderr.columns = originalStderr.columns
+    process.stderr.isTTY = originalStderr.isTTY
+    process.stderr.rows = originalStderr.rows
+    if (originalStderr.write) {
+      process.stderr.write = originalStderr.write
+    }
+    if (originalStdoutWrite) {
+      process.stdout.write = originalStdoutWrite
+    }
   })
 
   it('should parse a simple echo command', () => {

@@ -110,6 +110,9 @@ export function parseCommand(
       const argv = ['node', ...args]
 
       program.exitOverride()
+      program.configureOutput({
+        writeErr: str => process.stderr.write(str),
+      })
       program.parse(argv)
     } catch (error) {
       throw new Error(

@@ -4,6 +4,7 @@ import { parseContent } from '../src/parse-content'
 import { parseCommands } from '../src/parse-commands'
 import { executeCommands } from '../src/execute-commands'
 import { renderTags } from '../src/render-tags'
+import { runPipeline } from '../src/pipeline'
 
 describe('Full Pipeline Integration', () => {
   it('should process a simple script through the entire pipeline', () => {
@@ -203,5 +204,42 @@ describe('Full Pipeline Integration', () => {
         </command>
       </document>
     `)
+  })
+
+  it('should work with runPipeline helper function', () => {
+    const input = dedent`
+      # Pipeline Test
+      !!echo "Testing pipeline"
+      Done!
+    `
+
+    const output = runPipeline(input)
+
+    expect(output).toBe(dedent`
+      <document>
+        <text>
+          <content># Pipeline Test</content>
+        </text>
+        <command name='echo'>
+          <input>echo "Testing pipeline"</input>
+          <exit status='success' code='0' />
+          <stdout>Testing pipeline</stdout>
+          <stderr />
+        </command>
+        <text>
+          <content>Done!</content>
+        </text>
+      </document>
+    `)
+  })
+
+  it('should pass callingCommandName through runPipeline', () => {
+    const input = dedent`
+      !!tag-composer invalid-file.md
+    `
+
+    expect(() => runPipeline(input, 'tag-composer')).toThrow(
+      /File 'invalid-file.md' not found/,
+    )
   })
 })

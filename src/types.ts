@@ -34,7 +34,6 @@ export interface CommandLine {
   type: TypeValue
   input: string
   commandName: string
-  isCallingCommand: boolean
   exit?: TagWithAttributes
   stdout?: string
   stderr?: string

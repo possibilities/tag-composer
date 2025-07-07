@@ -6,6 +6,7 @@ import {
   CommandLine,
   UnparsedCommandLine,
 } from './types.js'
+import { createCommand } from './create-command.js'
 
 export function parseCommand(
   unparsedCommand: UnparsedCommandLine,
@@ -85,12 +86,42 @@ export function parseCommand(
   }
 
   const commandName = command.name?.text || 'unknown'
+  const isCallingCommand = callingCommandName === commandName
+
+  if (isCallingCommand) {
+    try {
+      const program = createCommand()
+
+      const args: string[] = []
+      if (command.name?.text) {
+        args.push(command.name.text)
+      }
+      if (command.suffix) {
+        for (const suffixItem of command.suffix) {
+          if (
+            suffixItem.type === 'Word' &&
+            typeof suffixItem.text === 'string'
+          ) {
+            args.push(suffixItem.text)
+          }
+        }
+      }
+
+      const argv = ['node', ...args]
+
+      program.exitOverride()
+      program.parse(argv)
+    } catch (error) {
+      throw new Error(
+        `Invalid calling command: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      )
+    }
+  }
 
   return {
     type: { name: 'command', attrs: { name: commandName } },
     input: unparsedCommand.input,
     commandName,
-    isCallingCommand: callingCommandName === commandName,
     children: unparsedCommand.children,
   }
 }

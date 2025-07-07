@@ -1,31 +1,7 @@
-import { Command } from 'commander'
-import packageJson from '../package.json' assert { type: 'json' }
-import { existsSync } from 'fs'
-import { extname } from 'path'
+import { createCommand } from './create-command.js'
 
 async function main() {
-  const program = new Command()
-
-  program
-    .name('tag-composer')
-    .description('Tag Composer CLI')
-    .version(packageJson.version)
-    .argument('<file>', 'markdown file to process')
-    .action((file: string) => {
-      if (!existsSync(file)) {
-        console.error(`Error: File '${file}' not found`)
-        process.exit(1)
-      }
-
-      if (extname(file).toLowerCase() !== '.md') {
-        console.error(
-          `Error: File '${file}' is not a markdown file (must end with .md)`,
-        )
-        process.exit(1)
-      }
-
-      console.log(`hello ${file}`)
-    })
+  const program = createCommand()
 
   try {
     program.exitOverride()
@@ -44,7 +20,11 @@ async function main() {
       ) {
         process.exit(0)
       }
-      console.error('Error:', error.message)
+      if (error.message.startsWith('Error: ')) {
+        console.error(error.message)
+      } else {
+        console.error('Error:', error.message)
+      }
     } else {
       console.error('Error:', error)
     }

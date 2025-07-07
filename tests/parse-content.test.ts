@@ -48,7 +48,7 @@ describe('parseContent', () => {
     ])
   })
 
-  it('should parse and execute commands through the full pipeline', () => {
+  it('should parse and execute commands through the full pipeline', async () => {
     const script = dedent`
       hello world
       !!echo "test"
@@ -56,15 +56,7 @@ describe('parseContent', () => {
     `
     const parsed = executeCommands(parseCommands(parseContent(script)))
 
-    const cleanedResult = parsed.map(line => {
-      if ('isCallingCommand' in line) {
-        const { isCallingCommand, ...rest } = line
-        return rest
-      }
-      return line
-    })
-
-    expect(cleanedResult).toEqual([
+    expect(parsed).toEqual([
       {
         type: 'text',
         content: 'hello world',
@@ -141,7 +133,7 @@ describe('parseContent', () => {
     const script = dedent`
       !!echo "first command"
       !!grep "pattern"
-      !!echo "third command"
+      !!ls -la
     `
     const parsed = parseContent(script)
 
@@ -156,28 +148,25 @@ describe('parseContent', () => {
       },
       {
         type: 'command',
-        input: 'echo "third command"',
+        input: 'ls -la',
       },
     ])
 
-    const parsedCommands = parseCommands(parsed, 'echo')
+    const parsedCommands = parseCommands(parsed, 'tag-composer')
 
     expect(parsedCommands[0]).toMatchObject({
       type: { name: 'command', attrs: { name: 'echo' } },
       commandName: 'echo',
-      isCallingCommand: true,
     })
 
     expect(parsedCommands[1]).toMatchObject({
       type: { name: 'command', attrs: { name: 'grep' } },
       commandName: 'grep',
-      isCallingCommand: false,
     })
 
     expect(parsedCommands[2]).toMatchObject({
-      type: { name: 'command', attrs: { name: 'echo' } },
-      commandName: 'echo',
-      isCallingCommand: true,
+      type: { name: 'command', attrs: { name: 'ls' } },
+      commandName: 'ls',
     })
   })
 
@@ -192,17 +181,15 @@ describe('parseContent', () => {
     expect(parsedCommands[0]).toMatchObject({
       type: { name: 'command', attrs: { name: 'echo' } },
       commandName: 'echo',
-      isCallingCommand: false,
     })
 
     expect(parsedCommands[1]).toMatchObject({
       type: { name: 'command', attrs: { name: 'grep' } },
       commandName: 'grep',
-      isCallingCommand: false,
     })
   })
 
-  it('should parse and execute complex command', () => {
+  it('should parse and execute complex command', async () => {
     const testScriptPath = path.join(
       process.cwd(),
       'tests/helpers/command-for-integration-tests.sh',
@@ -212,15 +199,7 @@ describe('parseContent', () => {
     `
     const parsed = executeCommands(parseCommands(parseContent(script)))
 
-    const cleanedResult = parsed.map(line => {
-      if ('isCallingCommand' in line) {
-        const { isCallingCommand, ...rest } = line
-        return rest
-      }
-      return line
-    })
-
-    expect(cleanedResult).toEqual([
+    expect(parsed).toEqual([
       {
         type: { name: 'command', attrs: { name: testScriptPath } },
         input: `${testScriptPath} --exit-code 42 --stdout "hello world" --stderr "error message"`,
@@ -238,7 +217,7 @@ describe('parseContent', () => {
     ])
   })
 
-  it('should throw error for compound commands in parse phase', () => {
+  it('should throw error for compound commands in parse phase', async () => {
     const script = dedent`
       !!echo hello | grep hello
     `

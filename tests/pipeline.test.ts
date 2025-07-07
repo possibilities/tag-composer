@@ -98,7 +98,7 @@ describe('Full Pipeline Integration', () => {
     `)
   })
 
-  it('should handle complex real-world scenario', () => {
+  it('should handle complex real-world scenario', async () => {
     const input = dedent`
       System Information Report
       !!echo "Processing report..."
@@ -108,14 +108,14 @@ describe('Full Pipeline Integration', () => {
       Report complete.
     `
 
-    const pipeline = (input: string) => {
+    const pipeline = async (input: string) => {
       const parsed = parseContent(input)
       const validated = parseCommands(parsed)
       const executed = executeCommands(validated)
       return renderTags(executed)
     }
 
-    const tags = pipeline(input)
+    const tags = await pipeline(input)
 
     expect(tags).toMatch(/<document>/)
     expect(tags).toMatch(
@@ -135,7 +135,7 @@ describe('Full Pipeline Integration', () => {
     expect(tags).toMatch(/<\/document>/)
   })
 
-  it('should handle empty input', () => {
+  it('should handle empty input', async () => {
     const input = ''
 
     const parsed = parseContent(input)
@@ -149,7 +149,7 @@ describe('Full Pipeline Integration', () => {
     `)
   })
 
-  it('should handle input with only text', () => {
+  it('should handle input with only text', async () => {
     const input = dedent`
       This is just text
       No commands here
@@ -176,7 +176,7 @@ describe('Full Pipeline Integration', () => {
     `)
   })
 
-  it('should handle special characters in command output', () => {
+  it('should handle special characters in command output', async () => {
     const input = dedent`
       !!echo "<tag>Special & chars</tag>"
       !!echo "Multiple words with spaces"

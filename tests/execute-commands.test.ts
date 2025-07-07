@@ -59,12 +59,12 @@ describe('executeCommands', () => {
       },
       {
         type: 'command',
-        content: 'echo "test output"',
+        input: 'echo "test output"',
         commandName: 'echo',
       },
       {
         type: 'command',
-        content: 'echo "another test"',
+        input: 'echo "another test"',
         commandName: 'echo',
       },
     ]
@@ -78,7 +78,7 @@ describe('executeCommands', () => {
 
     expect(result[1]).toMatchObject({
       type: 'command',
-      content: 'echo "test output"',
+      input: 'echo "test output"',
       commandName: 'echo',
       statusCode: 0,
       stdout: 'test output\n',
@@ -87,7 +87,7 @@ describe('executeCommands', () => {
 
     expect(result[2]).toMatchObject({
       type: 'command',
-      content: 'echo "another test"',
+      input: 'echo "another test"',
       commandName: 'echo',
       statusCode: 0,
       stdout: 'another test\n',
@@ -103,7 +103,7 @@ describe('executeCommands', () => {
         children: [
           {
             type: 'command',
-            content: 'echo "nested command"',
+            input: 'echo "nested command"',
             commandName: 'echo',
           },
           {
@@ -112,7 +112,7 @@ describe('executeCommands', () => {
             children: [
               {
                 type: 'command',
-                content: 'echo "deeply nested"',
+                input: 'echo "deeply nested"',
                 commandName: 'echo',
               },
             ],
@@ -126,7 +126,7 @@ describe('executeCommands', () => {
     expect(result[0].type).toBe('section')
     expect(result[0].children[0]).toMatchObject({
       type: 'command',
-      content: 'echo "nested command"',
+      input: 'echo "nested command"',
       statusCode: 0,
       stdout: 'nested command\n',
       stderr: '',
@@ -135,7 +135,7 @@ describe('executeCommands', () => {
     expect(result[0].children[1].type).toBe('subsection')
     expect(result[0].children[1].children[0]).toMatchObject({
       type: 'command',
-      content: 'echo "deeply nested"',
+      input: 'echo "deeply nested"',
       statusCode: 0,
       stdout: 'deeply nested\n',
       stderr: '',
@@ -157,7 +157,7 @@ describe('executeCommands', () => {
           },
           {
             type: 'command',
-            content: 'false',
+            input: 'false',
             commandName: 'false',
           },
         ],
@@ -178,7 +178,7 @@ describe('executeCommands', () => {
 
     expect(result[1].children[1]).toMatchObject({
       type: 'command',
-      content: 'false',
+      input: 'false',
       commandName: 'false',
       statusCode: 1,
       stdout: '',

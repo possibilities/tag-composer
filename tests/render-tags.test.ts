@@ -294,7 +294,7 @@ describe('renderTags', () => {
       const lines = [
         {
           type: 'command',
-          content: 'echo "test"',
+          input: 'echo "test"',
           commandName: 'echo',
           statusCode: 0,
           stdout: 'test\n',
@@ -306,9 +306,8 @@ describe('renderTags', () => {
 
       expect(result).toBe(dedent`
         <document>
-          <command>
-            <content>echo "test"</content>
-            <commandName>echo</commandName>
+          <command name='echo'>
+            <input>echo "test"</input>
             <statusCode>0</statusCode>
             <stdout>test</stdout>
             <stderr />
@@ -325,7 +324,7 @@ describe('renderTags', () => {
         },
         {
           type: 'command',
-          content: 'false',
+          input: 'false',
           commandName: 'false',
           statusCode: 1,
           stdout: '',
@@ -344,9 +343,8 @@ describe('renderTags', () => {
           <text>
             <content>Starting script</content>
           </text>
-          <command>
-            <content>false</content>
-            <commandName>false</commandName>
+          <command name='false'>
+            <input>false</input>
             <statusCode>1</statusCode>
             <stdout />
             <stderr>error occurred</stderr>

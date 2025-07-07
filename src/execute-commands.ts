@@ -8,7 +8,7 @@ export interface ExecutionResult {
 
 interface ParsedLine {
   type: string
-  content?: string
+  input?: string
   commandName?: string
   statusCode?: number
   stdout?: string
@@ -34,8 +34,8 @@ export function executeCommands(lines: ParsedLine[]): ParsedLine[] {
   return lines.map(line => {
     const newLine = { ...line }
 
-    if (line.type === 'command' && line.content) {
-      const result = executeCommand(line.content)
+    if (line.type === 'command' && line.input) {
+      const result = executeCommand(line.input)
       newLine.statusCode = result.statusCode
       newLine.stdout = result.stdout
       newLine.stderr = result.stderr

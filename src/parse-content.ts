@@ -13,7 +13,7 @@ interface TextLine {
 
 interface CommandLine {
   type: 'command'
-  content: string
+  input: string
   commandName: string
   isCallingCommand: boolean
   ast?: AstNode
@@ -58,7 +58,7 @@ export function parseContent(
 
         const commandLine: CommandLine = {
           type: 'command',
-          content: line.substring(2),
+          input: line.substring(2),
           commandName,
           isCallingCommand: callingCommandName === commandName,
           ast,

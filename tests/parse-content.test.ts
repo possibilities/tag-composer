@@ -44,7 +44,7 @@ describe('parseContent', () => {
       },
       {
         type: 'command',
-        content: 'echo "test"',
+        input: 'echo "test"',
         commandName: 'echo',
         statusCode: 0,
         stdout: 'test\n',
@@ -154,7 +154,7 @@ describe('parseContent', () => {
     expect(parsedWithoutAst).toEqual([
       {
         type: 'command',
-        content: `${testScriptPath} --exit-code 42 --stdout "hello world" --stderr "error message"`,
+        input: `${testScriptPath} --exit-code 42 --stdout "hello world" --stderr "error message"`,
         commandName: testScriptPath,
         statusCode: 42,
         stdout: 'hello world\n',

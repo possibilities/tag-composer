@@ -16,11 +16,22 @@ function renderLine(line: ParsedLine, level: number, indent: string): string[] {
   const output: string[] = []
   const { type, children, ...rest } = line
 
-  output.push(`${renderIndent(level, indent)}<${type}>`)
+  // Special handling for command tags
+  if (type === 'command' && rest.commandName) {
+    output.push(
+      `${renderIndent(level, indent)}<${type} name='${rest.commandName}'>`,
+    )
+  } else {
+    output.push(`${renderIndent(level, indent)}<${type}>`)
+  }
 
   for (const [key, value] of Object.entries(rest)) {
-    // Skip internal properties
-    if (key === 'ast' || key === 'isCallingCommand') {
+    // Skip internal properties and commandName for command tags
+    if (
+      key === 'ast' ||
+      key === 'isCallingCommand' ||
+      (type === 'command' && key === 'commandName')
+    ) {
       continue
     }
 

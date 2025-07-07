@@ -24,16 +24,14 @@ describe('Full Pipeline Integration', () => {
         <text>
           <content>This is a simple script</content>
         </text>
-        <command>
-          <content>echo "Hello from the pipeline"</content>
-          <commandName>echo</commandName>
+        <command name='echo'>
+          <input>echo "Hello from the pipeline"</input>
           <statusCode>0</statusCode>
           <stdout>Hello from the pipeline</stdout>
           <stderr />
         </command>
-        <command>
-          <content>echo "Testing 123"</content>
-          <commandName>echo</commandName>
+        <command name='echo'>
+          <input>echo "Testing 123"</input>
           <statusCode>0</statusCode>
           <stdout>Testing 123</stdout>
           <stderr />
@@ -82,16 +80,14 @@ describe('Full Pipeline Integration', () => {
         <text>
           <content>Testing error handling</content>
         </text>
-        <command>
-          <content>false</content>
-          <commandName>false</commandName>
+        <command name='false'>
+          <input>false</input>
           <statusCode>1</statusCode>
           <stdout />
           <stderr />
         </command>
-        <command>
-          <content>sh -c "echo 'Error message' >&2 && exit 42"</content>
-          <commandName>sh</commandName>
+        <command name='sh'>
+          <input>sh -c "echo 'Error message' >&2 && exit 42"</input>
           <statusCode>42</statusCode>
           <stdout />
           <stderr>Error message</stderr>
@@ -128,12 +124,12 @@ describe('Full Pipeline Integration', () => {
       /<text>\s*<content>System Information Report<\/content>\s*<\/text>/,
     )
     expect(tags).toMatch(
-      /<command>\s*<content>echo "Hostname: \$\(hostname\)"<\/content>/,
+      /<command name='echo'>\s*<input>echo "Hostname: \$\(hostname\)"<\/input>/,
     )
-    expect(tags).toMatch(/<commandName>echo<\/commandName>/)
+    // commandName is now an attribute, not a tag
     expect(tags).toMatch(/<statusCode>0<\/statusCode>/)
-    expect(tags).toMatch(/<command>\s*<content>pwd<\/content>/)
-    expect(tags).toMatch(/<command>\s*<content>false<\/content>/)
+    expect(tags).toMatch(/<command name='pwd'>\s*<input>pwd<\/input>/)
+    expect(tags).toMatch(/<command name='false'>\s*<input>false<\/input>/)
     expect(tags).toMatch(/<statusCode>1<\/statusCode>/)
     expect(tags).toMatch(
       /<text>\s*<content>Report complete\.<\/content>\s*<\/text>/,
@@ -195,16 +191,14 @@ describe('Full Pipeline Integration', () => {
 
     expect(tags).toBe(dedent`
       <document>
-        <command>
-          <content>echo "<tag>Special & chars</tag>"</content>
-          <commandName>echo</commandName>
+        <command name='echo'>
+          <input>echo "<tag>Special & chars</tag>"</input>
           <statusCode>0</statusCode>
           <stdout><tag>Special & chars</tag></stdout>
           <stderr />
         </command>
-        <command>
-          <content>echo "Multiple words with spaces"</content>
-          <commandName>echo</commandName>
+        <command name='echo'>
+          <input>echo "Multiple words with spaces"</input>
           <statusCode>0</statusCode>
           <stdout>Multiple words with spaces</stdout>
           <stderr />

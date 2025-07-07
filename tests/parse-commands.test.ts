@@ -80,7 +80,7 @@ function parseCommand(unparsedCommand: UnparsedCommandLine): CommandLine {
   const commandName = command.name?.text || 'unknown'
 
   return {
-    type: { name: 'command', attrs: { name: commandName } },
+    type: { name: 'command', attributes: { name: commandName } },
     input: unparsedCommand.input,
     commandName,
     ast,
@@ -96,7 +96,7 @@ describe('parseCommand', () => {
     }
     const result = parseCommand(unparsed)
     expect(result).toMatchObject({
-      type: { name: 'command', attrs: { name: 'echo' } },
+      type: { name: 'command', attributes: { name: 'echo' } },
       input: 'echo "hello world"',
       commandName: 'echo',
       ast: expect.any(Object),
@@ -261,50 +261,126 @@ describe('parseCommand', () => {
 describe('parseCommands', () => {
   it('should parse multiple lines with mixed content', async () => {
     const lines = [
-      { type: 'text' as const, content: 'Some text' },
+      {
+        type: 'element',
+        name: 'text',
+        elements: [
+          {
+            type: 'element',
+            name: 'content',
+            elements: [{ type: 'text', text: 'Some text' }],
+          },
+        ],
+      },
       { type: 'command' as const, input: 'echo "hello"' },
-      { type: 'text' as const, content: 'More text' },
+      {
+        type: 'element',
+        name: 'text',
+        elements: [
+          {
+            type: 'element',
+            name: 'content',
+            elements: [{ type: 'text', text: 'More text' }],
+          },
+        ],
+      },
       { type: 'command' as const, input: 'ls -la' },
     ]
 
     const result = await parseCommands(lines)
 
-    expect(result[0]).toEqual({ type: 'text', content: 'Some text' })
-    expect(result[1]).toMatchObject({
-      type: { name: 'command', attrs: { name: 'echo' } },
-      commandName: 'echo',
-      input: 'echo "hello"',
+    expect(result[0]).toEqual({
+      type: 'element',
+      name: 'text',
+      elements: [
+        {
+          type: 'element',
+          name: 'content',
+          elements: [{ type: 'text', text: 'Some text' }],
+        },
+      ],
     })
-    expect(result[2]).toEqual({ type: 'text', content: 'More text' })
+    expect(result[1]).toMatchObject({
+      type: 'element',
+      name: 'command',
+      attributes: { name: 'echo' },
+      commandName: 'echo',
+      elements: [
+        {
+          type: 'element',
+          name: 'input',
+          elements: [{ type: 'text', text: 'echo "hello"' }],
+        },
+      ],
+    })
+    expect(result[2]).toEqual({
+      type: 'element',
+      name: 'text',
+      elements: [
+        {
+          type: 'element',
+          name: 'content',
+          elements: [{ type: 'text', text: 'More text' }],
+        },
+      ],
+    })
     expect(result[3]).toMatchObject({
-      type: { name: 'command', attrs: { name: 'ls' } },
+      type: 'element',
+      name: 'command',
+      attributes: { name: 'ls' },
       commandName: 'ls',
-      input: 'ls -la',
+      elements: [
+        {
+          type: 'element',
+          name: 'input',
+          elements: [{ type: 'text', text: 'ls -la' }],
+        },
+      ],
     })
   })
 
   it('should handle nested children', async () => {
     const lines = [
       {
-        type: 'text' as const,
-        content: 'Parent',
-        children: [
+        type: 'element',
+        name: 'section',
+        elements: [
           { type: 'command' as const, input: 'echo "child"' },
-          { type: 'text' as const, content: 'Child text' },
+          {
+            type: 'element',
+            name: 'text',
+            elements: [
+              {
+                type: 'element',
+                name: 'content',
+                elements: [{ type: 'text', text: 'Child text' }],
+              },
+            ],
+          },
         ],
       },
     ]
 
     const result = await parseCommands(lines)
 
-    expect(result[0].type).toBe('text')
-    expect(result[0].children?.[0]).toMatchObject({
-      type: { name: 'command', attrs: { name: 'echo' } },
+    expect(result[0].type).toBe('element')
+    expect(result[0].name).toBe('section')
+    expect(result[0].elements?.[0]).toMatchObject({
+      type: 'element',
+      name: 'command',
+      attributes: { name: 'echo' },
       commandName: 'echo',
     })
-    expect(result[0].children?.[1]).toEqual({
-      type: 'text',
-      content: 'Child text',
+    expect(result[0].elements?.[1]).toEqual({
+      type: 'element',
+      name: 'text',
+      elements: [
+        {
+          type: 'element',
+          name: 'content',
+          elements: [{ type: 'text', text: 'Child text' }],
+        },
+      ],
     })
   })
 

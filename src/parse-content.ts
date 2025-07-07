@@ -1,4 +1,4 @@
-import { UnparsedCommandLine, ParsedLine } from './types.js'
+import { UnparsedCommandLine, ParsedLine, XmlElement } from './types.js'
 
 function parseCommandLine(
   line: string,
@@ -19,7 +19,9 @@ function parseCommandLine(
   }
 }
 
-export function parseContent(input: string): ParsedLine[] {
+export function parseContent(
+  input: string,
+): (ParsedLine | UnparsedCommandLine)[] {
   return input
     .split('\n')
     .filter(line => line.length > 0)
@@ -28,8 +30,15 @@ export function parseContent(input: string): ParsedLine[] {
         return parseCommandLine(line, index + 1)
       }
       return {
-        type: 'text',
-        content: line,
-      }
+        type: 'element',
+        name: 'text',
+        elements: [
+          {
+            type: 'element',
+            name: 'content',
+            elements: [{ type: 'text', text: line }],
+          },
+        ],
+      } as XmlElement
     })
 }

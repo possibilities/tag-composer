@@ -28,17 +28,17 @@ describe('Full Pipeline Integration', () => {
         <text>
           <content>This is a simple script</content>
         </text>
-        <command name='echo'>
+        <command name="echo">
           <input>echo "Hello from the pipeline"</input>
-          <exit status='success' code='0' />
+          <exit status="success" code="0"/>
           <stdout>Hello from the pipeline</stdout>
-          <stderr />
+          <stderr/>
         </command>
-        <command name='echo'>
+        <command name="echo">
           <input>echo "Testing 123"</input>
-          <exit status='success' code='0' />
+          <exit status="success" code="0"/>
           <stdout>Testing 123</stdout>
-          <stderr />
+          <stderr/>
         </command>
         <text>
           <content>All done!</content>
@@ -83,16 +83,16 @@ describe('Full Pipeline Integration', () => {
         <text>
           <content>Testing error handling</content>
         </text>
-        <command name='false'>
+        <command name="false">
           <input>false</input>
-          <exit status='failure' code='1' />
-          <stdout />
-          <stderr />
+          <exit status="failure" code="1"/>
+          <stdout/>
+          <stderr/>
         </command>
-        <command name='sh'>
-          <input>sh -c "echo 'Error message' >&2 && exit 42"</input>
-          <exit status='failure' code='42' />
-          <stdout />
+        <command name="sh">
+          <input>sh -c "echo 'Error message' &gt;&amp;2 &amp;&amp; exit 42"</input>
+          <exit status="failure" code="42"/>
+          <stdout/>
           <stderr>Error message</stderr>
         </command>
         <text>
@@ -126,13 +126,13 @@ describe('Full Pipeline Integration', () => {
       /<text>\s*<content>System Information Report<\/content>\s*<\/text>/,
     )
     expect(tags).toMatch(
-      /<command name='echo'>\s*<input>echo "Processing report..."<\/input>/,
+      /<command name="echo">\s*<input>echo "Processing report..."<\/input>/,
     )
 
-    expect(tags).toMatch(/<exit status='success' code='0' \/>/)
-    expect(tags).toMatch(/<command name='pwd'>\s*<input>pwd<\/input>/)
-    expect(tags).toMatch(/<command name='false'>\s*<input>false<\/input>/)
-    expect(tags).toMatch(/<exit status='failure' code='1' \/>/)
+    expect(tags).toMatch(/<exit status="success" code="0"\/>/)
+    expect(tags).toMatch(/<command name="pwd">\s*<input>pwd<\/input>/)
+    expect(tags).toMatch(/<command name="false">\s*<input>false<\/input>/)
+    expect(tags).toMatch(/<exit status="failure" code="1"\/>/)
     expect(tags).toMatch(
       /<text>\s*<content>Report complete\.<\/content>\s*<\/text>/,
     )
@@ -148,8 +148,7 @@ describe('Full Pipeline Integration', () => {
     const tags = renderTags(executed)
 
     expect(tags).toBe(dedent`
-      <document>
-      </document>
+      <document/>
     `)
   })
 
@@ -193,17 +192,17 @@ describe('Full Pipeline Integration', () => {
 
     expect(tags).toBe(dedent`
       <document>
-        <command name='echo'>
-          <input>echo "<tag>Special & chars</tag>"</input>
-          <exit status='success' code='0' />
-          <stdout><tag>Special & chars</tag></stdout>
-          <stderr />
+        <command name="echo">
+          <input>echo "&lt;tag&gt;Special &amp; chars&lt;/tag&gt;"</input>
+          <exit status="success" code="0"/>
+          <stdout>&lt;tag&gt;Special &amp; chars&lt;/tag&gt;</stdout>
+          <stderr/>
         </command>
-        <command name='echo'>
+        <command name="echo">
           <input>echo "Multiple words with spaces"</input>
-          <exit status='success' code='0' />
+          <exit status="success" code="0"/>
           <stdout>Multiple words with spaces</stdout>
-          <stderr />
+          <stderr/>
         </command>
       </document>
     `)
@@ -223,11 +222,11 @@ describe('Full Pipeline Integration', () => {
         <text>
           <content># Pipeline Test</content>
         </text>
-        <command name='echo'>
+        <command name="echo">
           <input>echo "Testing pipeline"</input>
-          <exit status='success' code='0' />
+          <exit status="success" code="0"/>
           <stdout>Testing pipeline</stdout>
-          <stderr />
+          <stderr/>
         </command>
         <text>
           <content>Done!</content>
@@ -276,11 +275,11 @@ describe('Full Pipeline Integration', () => {
           <text>
             <content># Included Content</content>
           </text>
-          <command name='echo'>
+          <command name="echo">
             <input>echo "From included file"</input>
-            <exit status='success' code='0' />
+            <exit status="success" code="0"/>
             <stdout>From included file</stdout>
-            <stderr />
+            <stderr/>
           </command>
           <text>
             <content>More text</content>
@@ -347,11 +346,11 @@ describe('Full Pipeline Integration', () => {
           <text>
             <content>Deeply nested content</content>
           </text>
-          <command name='echo'>
+          <command name="echo">
             <input>echo "From nested"</input>
-            <exit status='success' code='0' />
+            <exit status="success" code="0"/>
             <stdout>From nested</stdout>
-            <stderr />
+            <stderr/>
           </command>
           <text>
             <content>Back to middle</content>

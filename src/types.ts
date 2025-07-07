@@ -1,13 +1,26 @@
-export interface TagWithAttributes {
+export interface XmlElement {
+  type: 'element'
   name: string
-  attrs: Record<string, string>
+  attributes?: Record<string, string>
+  elements?: XmlNode[]
 }
 
-export type TypeValue = string | TagWithAttributes
-
-export function getTypeName(type: TypeValue): string {
-  return typeof type === 'string' ? type : type.name
+export interface XmlText {
+  type: 'text'
+  text: string
 }
+
+export interface XmlComment {
+  type: 'comment'
+  comment: string
+}
+
+export interface XmlCdata {
+  type: 'cdata'
+  cdata: string
+}
+
+export type XmlNode = XmlElement | XmlText | XmlComment | XmlCdata
 
 export interface AstNode {
   type: string
@@ -21,27 +34,23 @@ export interface AstNode {
 export interface UnparsedCommandLine {
   type: 'command'
   input: string
-  children?: ParsedLine[]
+  children?: XmlElement[]
 }
 
-export interface CommandLine {
-  type: TypeValue
-  input: string
+export interface CommandLine extends XmlElement {
+  name: 'command'
+  attributes: { name: string }
+  elements: XmlNode[]
   commandName: string
   ast?: AstNode
-  exit?: TagWithAttributes
-  stdout?: string
-  stderr?: string
-  children?: ParsedLine[]
 }
 
-export interface TextLine {
-  type: 'text'
-  content: string
-  children?: ParsedLine[]
+export interface TextLine extends XmlElement {
+  name: 'text'
+  elements: XmlElement[]
 }
 
-export type ParsedLine = TextLine | UnparsedCommandLine | CommandLine
+export type ParsedLine = XmlElement
 
 export interface ExecutionResult {
   statusCode: number
@@ -54,11 +63,11 @@ export interface RenderOptions {
 }
 
 export function isCommandLine(line: ParsedLine): line is CommandLine {
-  return typeof line.type === 'object' && line.type.name === 'command'
+  return line.type === 'element' && line.name === 'command'
 }
 
 export function isUnparsedCommandLine(
-  line: ParsedLine,
+  line: ParsedLine | UnparsedCommandLine,
 ): line is UnparsedCommandLine {
-  return line.type === 'command'
+  return 'type' in line && line.type === 'command' && !('name' in line)
 }

@@ -34,10 +34,10 @@ describe('CLI Integration', () => {
     expect(output).toContain('<document>')
     expect(output).toContain('<text>')
     expect(output).toContain('<content># Test Document</content>')
-    expect(output).toContain("<command name='echo'>")
+    expect(output).toContain('<command name="echo">')
     expect(output).toContain('<input>echo "Hello from CLI"</input>')
     expect(output).toContain('<stdout>Hello from CLI</stdout>')
-    expect(output).toContain("<command name='pwd'>")
+    expect(output).toContain('<command name="pwd">')
     expect(output).toContain('<content>All done!</content>')
     expect(output).toContain('</document>')
   })
@@ -50,8 +50,7 @@ describe('CLI Integration', () => {
     })
 
     expect(output.trim()).toBe(dedent`
-      <document>
-      </document>
+      <document/>
     `)
   })
 

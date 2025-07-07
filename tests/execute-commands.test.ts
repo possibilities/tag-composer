@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { executeCommands } from '../src/execute-commands'
-import { CommandLine } from '../src/types'
+import { CommandLine, XmlElement } from '../src/types'
 import { spawnSync } from 'child_process'
 
 function executeCommand(command: string) {
@@ -58,10 +58,9 @@ describe('executeCommand', () => {
   it('should handle commands that do not exist', () => {
     const result = executeCommand('nonexistentcommand12345')
 
-    expect(result.statusCode).not.toBe(0)
-    expect(result.stderr.toLowerCase()).toMatch(
-      /command not found|permission denied|not found/,
-    )
+    expect(result.statusCode).toBe(127)
+    expect(result.stdout).toBe('')
+    expect(result.stderr).toContain('nonexistentcommand12345')
   })
 })
 
@@ -69,192 +68,366 @@ describe('executeCommands', () => {
   it('should execute commands in a flat array', () => {
     const lines = [
       {
-        type: 'text' as const,
-        content: 'hello',
-      },
+        type: 'element',
+        name: 'text',
+        elements: [
+          {
+            type: 'element',
+            name: 'content',
+            elements: [{ type: 'text', text: 'hello' }],
+          },
+        ],
+      } as XmlElement,
       {
-        type: { name: 'command', attrs: { name: 'echo' } },
-        input: 'echo "test output"',
+        type: 'element',
+        name: 'command',
+        attributes: { name: 'echo' },
+        elements: [
+          {
+            type: 'element',
+            name: 'input',
+            elements: [{ type: 'text', text: 'echo "test output"' }],
+          },
+        ],
         commandName: 'echo',
-        isCallingCommand: false,
       } as CommandLine,
       {
-        type: { name: 'command', attrs: { name: 'echo' } },
-        input: 'echo "another test"',
+        type: 'element',
+        name: 'command',
+        attributes: { name: 'echo' },
+        elements: [
+          {
+            type: 'element',
+            name: 'input',
+            elements: [{ type: 'text', text: 'echo "another test"' }],
+          },
+        ],
         commandName: 'echo',
-        isCallingCommand: false,
       } as CommandLine,
     ]
 
     const result = executeCommands(lines)
 
     expect(result[0]).toEqual({
-      type: 'text',
-      content: 'hello',
+      type: 'element',
+      name: 'text',
+      elements: [
+        {
+          type: 'element',
+          name: 'content',
+          elements: [{ type: 'text', text: 'hello' }],
+        },
+      ],
     })
 
     expect(result[1]).toMatchObject({
-      type: { name: 'command', attrs: { name: 'echo' } },
-      input: 'echo "test output"',
+      type: 'element',
+      name: 'command',
+      attributes: { name: 'echo' },
       commandName: 'echo',
-      exit: {
-        name: 'exit',
-        attrs: {
-          status: 'success',
-          code: '0',
+      elements: expect.arrayContaining([
+        {
+          type: 'element',
+          name: 'input',
+          elements: [{ type: 'text', text: 'echo "test output"' }],
         },
-      },
-      stdout: 'test output\n',
-      stderr: '',
+        {
+          type: 'element',
+          name: 'exit',
+          attributes: {
+            status: 'success',
+            code: '0',
+          },
+        },
+        {
+          type: 'element',
+          name: 'stdout',
+          elements: [{ type: 'text', text: 'test output' }],
+        },
+        {
+          type: 'element',
+          name: 'stderr',
+        },
+      ]),
     })
 
     expect(result[2]).toMatchObject({
-      type: { name: 'command', attrs: { name: 'echo' } },
-      input: 'echo "another test"',
+      type: 'element',
+      name: 'command',
+      attributes: { name: 'echo' },
       commandName: 'echo',
-      exit: {
-        name: 'exit',
-        attrs: {
-          status: 'success',
-          code: '0',
+      elements: expect.arrayContaining([
+        {
+          type: 'element',
+          name: 'input',
+          elements: [{ type: 'text', text: 'echo "another test"' }],
         },
-      },
-      stdout: 'another test\n',
-      stderr: '',
+        {
+          type: 'element',
+          name: 'exit',
+          attributes: {
+            status: 'success',
+            code: '0',
+          },
+        },
+        {
+          type: 'element',
+          name: 'stdout',
+          elements: [{ type: 'text', text: 'another test' }],
+        },
+        {
+          type: 'element',
+          name: 'stderr',
+        },
+      ]),
     })
   })
 
   it('should execute commands in nested structures', () => {
     const lines = [
       {
-        type: 'section',
-        title: 'Test Section',
-        children: [
+        type: 'element',
+        name: 'section',
+        elements: [
           {
-            type: { name: 'command', attrs: { name: 'echo' } },
-            input: 'echo "nested command"',
+            type: 'element',
+            name: 'command',
+            attributes: { name: 'echo' },
+            elements: [
+              {
+                type: 'element',
+                name: 'input',
+                elements: [{ type: 'text', text: 'echo "nested command"' }],
+              },
+            ],
             commandName: 'echo',
-            isCallingCommand: false,
           } as CommandLine,
           {
-            type: 'text' as const,
-            content: 'nested text',
+            type: 'element',
+            name: 'text',
+            elements: [
+              {
+                type: 'element',
+                name: 'content',
+                elements: [{ type: 'text', text: 'nested text' }],
+              },
+            ],
+          } as XmlElement,
+        ],
+      } as XmlElement,
+      {
+        type: 'element',
+        name: 'command',
+        attributes: { name: 'echo' },
+        elements: [
+          {
+            type: 'element',
+            name: 'input',
+            elements: [{ type: 'text', text: 'echo "root level"' }],
           },
         ],
-      },
-      {
-        type: { name: 'command', attrs: { name: 'echo' } },
-        input: 'echo "root level"',
         commandName: 'echo',
-        isCallingCommand: false,
       } as CommandLine,
     ]
 
     const result = executeCommands(lines)
 
-    expect(result[0].type).toBe('section')
-    expect(result[0].children[0]).toMatchObject({
-      type: { name: 'command', attrs: { name: 'echo' } },
-      input: 'echo "nested command"',
-      exit: {
-        name: 'exit',
-        attrs: {
-          status: 'success',
-          code: '0',
+    expect(result[0].type).toBe('element')
+    expect(result[0].name).toBe('section')
+    expect(result[0].elements![0]).toMatchObject({
+      type: 'element',
+      name: 'command',
+      attributes: { name: 'echo' },
+      elements: expect.arrayContaining([
+        {
+          type: 'element',
+          name: 'input',
+          elements: [{ type: 'text', text: 'echo "nested command"' }],
         },
-      },
-      stdout: 'nested command\n',
-      stderr: '',
+        {
+          type: 'element',
+          name: 'exit',
+          attributes: {
+            status: 'success',
+            code: '0',
+          },
+        },
+        {
+          type: 'element',
+          name: 'stdout',
+          elements: [{ type: 'text', text: 'nested command' }],
+        },
+      ]),
     })
-    expect(result[0].children[1]).toEqual({
-      type: 'text',
-      content: 'nested text',
+    expect(result[0].elements![1]).toEqual({
+      type: 'element',
+      name: 'text',
+      elements: [
+        {
+          type: 'element',
+          name: 'content',
+          elements: [{ type: 'text', text: 'nested text' }],
+        },
+      ],
     })
 
     expect(result[1]).toMatchObject({
-      type: { name: 'command', attrs: { name: 'echo' } },
-      input: 'echo "root level"',
-      exit: {
-        name: 'exit',
-        attrs: {
-          status: 'success',
-          code: '0',
+      type: 'element',
+      name: 'command',
+      attributes: { name: 'echo' },
+      elements: expect.arrayContaining([
+        {
+          type: 'element',
+          name: 'input',
+          elements: [{ type: 'text', text: 'echo "root level"' }],
         },
-      },
-      stdout: 'root level\n',
-      stderr: '',
+        {
+          type: 'element',
+          name: 'exit',
+          attributes: {
+            status: 'success',
+            code: '0',
+          },
+        },
+        {
+          type: 'element',
+          name: 'stdout',
+          elements: [{ type: 'text', text: 'root level' }],
+        },
+      ]),
     })
   })
 
   it('should handle mixed content in nested structures', () => {
     const lines = [
       {
-        type: 'text' as const,
-        content: 'start',
-      },
-      {
-        type: 'group',
-        children: [
+        type: 'element',
+        name: 'text',
+        elements: [
           {
-            type: { name: 'command', attrs: { name: 'true' } },
-            input: 'true',
+            type: 'element',
+            name: 'content',
+            elements: [{ type: 'text', text: 'start' }],
+          },
+        ],
+      } as XmlElement,
+      {
+        type: 'element',
+        name: 'group',
+        elements: [
+          {
+            type: 'element',
+            name: 'command',
+            attributes: { name: 'true' },
+            elements: [
+              {
+                type: 'element',
+                name: 'input',
+                elements: [{ type: 'text', text: 'true' }],
+              },
+            ],
             commandName: 'true',
-            isCallingCommand: false,
           } as CommandLine,
           {
-            type: { name: 'command', attrs: { name: 'false' } },
-            input: 'false',
+            type: 'element',
+            name: 'command',
+            attributes: { name: 'false' },
+            elements: [
+              {
+                type: 'element',
+                name: 'input',
+                elements: [{ type: 'text', text: 'false' }],
+              },
+            ],
             commandName: 'false',
-            isCallingCommand: false,
           } as CommandLine,
         ],
-      },
+      } as XmlElement,
       {
-        type: 'text' as const,
-        content: 'end',
-      },
+        type: 'element',
+        name: 'text',
+        elements: [
+          {
+            type: 'element',
+            name: 'content',
+            elements: [{ type: 'text', text: 'end' }],
+          },
+        ],
+      } as XmlElement,
     ]
 
     const result = executeCommands(lines)
 
     expect(result[0]).toEqual({
-      type: 'text',
-      content: 'start',
+      type: 'element',
+      name: 'text',
+      elements: [
+        {
+          type: 'element',
+          name: 'content',
+          elements: [{ type: 'text', text: 'start' }],
+        },
+      ],
     })
 
-    expect(result[1].children[0]).toMatchObject({
-      type: { name: 'command', attrs: { name: 'true' } },
-      input: 'true',
-      commandName: 'true',
-      exit: {
-        name: 'exit',
-        attrs: {
-          status: 'success',
-          code: '0',
+    expect(result[1].elements![0]).toMatchObject({
+      type: 'element',
+      name: 'command',
+      attributes: { name: 'true' },
+      elements: expect.arrayContaining([
+        {
+          type: 'element',
+          name: 'exit',
+          attributes: {
+            status: 'success',
+            code: '0',
+          },
         },
-      },
-      stdout: '',
-      stderr: '',
+        {
+          type: 'element',
+          name: 'stdout',
+        },
+        {
+          type: 'element',
+          name: 'stderr',
+        },
+      ]),
     })
 
-    expect(result[1].children[1]).toMatchObject({
-      type: { name: 'command', attrs: { name: 'false' } },
-      input: 'false',
-      commandName: 'false',
-      exit: {
-        name: 'exit',
-        attrs: {
-          status: 'failure',
-          code: '1',
+    expect(result[1].elements![1]).toMatchObject({
+      type: 'element',
+      name: 'command',
+      attributes: { name: 'false' },
+      elements: expect.arrayContaining([
+        {
+          type: 'element',
+          name: 'exit',
+          attributes: {
+            status: 'failure',
+            code: '1',
+          },
         },
-      },
-      stdout: '',
-      stderr: '',
+        {
+          type: 'element',
+          name: 'stdout',
+        },
+        {
+          type: 'element',
+          name: 'stderr',
+        },
+      ]),
     })
 
     expect(result[2]).toEqual({
-      type: 'text',
-      content: 'end',
+      type: 'element',
+      name: 'text',
+      elements: [
+        {
+          type: 'element',
+          name: 'content',
+          elements: [{ type: 'text', text: 'end' }],
+        },
+      ],
     })
   })
 })

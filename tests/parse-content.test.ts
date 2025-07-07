@@ -14,12 +14,26 @@ describe('parseContent', () => {
     const parsed = parseContent(script)
     expect(parsed).toEqual([
       {
-        type: 'text',
-        content: 'hello world',
+        type: 'element',
+        name: 'text',
+        elements: [
+          {
+            type: 'element',
+            name: 'content',
+            elements: [{ type: 'text', text: 'hello world' }],
+          },
+        ],
       },
       {
-        type: 'text',
-        content: 'goodbye world',
+        type: 'element',
+        name: 'text',
+        elements: [
+          {
+            type: 'element',
+            name: 'content',
+            elements: [{ type: 'text', text: 'goodbye world' }],
+          },
+        ],
       },
     ])
   })
@@ -34,16 +48,30 @@ describe('parseContent', () => {
 
     expect(parsed).toEqual([
       {
-        type: 'text',
-        content: 'hello world',
+        type: 'element',
+        name: 'text',
+        elements: [
+          {
+            type: 'element',
+            name: 'content',
+            elements: [{ type: 'text', text: 'hello world' }],
+          },
+        ],
       },
       {
         type: 'command',
         input: 'echo "test"',
       },
       {
-        type: 'text',
-        content: 'goodbye world',
+        type: 'element',
+        name: 'text',
+        elements: [
+          {
+            type: 'element',
+            name: 'content',
+            elements: [{ type: 'text', text: 'goodbye world' }],
+          },
+        ],
       },
     ])
   })
@@ -58,28 +86,57 @@ describe('parseContent', () => {
 
     expect(parsed).toEqual([
       {
-        type: 'text',
-        content: 'hello world',
+        type: 'element',
+        name: 'text',
+        elements: [
+          {
+            type: 'element',
+            name: 'content',
+            elements: [{ type: 'text', text: 'hello world' }],
+          },
+        ],
       },
       {
-        type: { name: 'command', attrs: { name: 'echo' } },
-        input: 'echo "test"',
+        type: 'element',
+        name: 'command',
+        attributes: { name: 'echo' },
         commandName: 'echo',
         ast: expect.any(Object),
-        children: undefined,
-        exit: {
-          name: 'exit',
-          attrs: {
-            status: 'success',
-            code: '0',
+        elements: expect.arrayContaining([
+          {
+            type: 'element',
+            name: 'input',
+            elements: [{ type: 'text', text: 'echo "test"' }],
           },
-        },
-        stdout: 'test\n',
-        stderr: '',
+          {
+            type: 'element',
+            name: 'exit',
+            attributes: {
+              status: 'success',
+              code: '0',
+            },
+          },
+          {
+            type: 'element',
+            name: 'stdout',
+            elements: [{ type: 'text', text: 'test' }],
+          },
+          {
+            type: 'element',
+            name: 'stderr',
+          },
+        ]),
       },
       {
-        type: 'text',
-        content: 'goodbye world',
+        type: 'element',
+        name: 'text',
+        elements: [
+          {
+            type: 'element',
+            name: 'content',
+            elements: [{ type: 'text', text: 'goodbye world' }],
+          },
+        ],
       },
     ])
   })
@@ -115,16 +172,30 @@ describe('parseContent', () => {
     const parsed = parseContent(script)
     expect(parsed).toEqual([
       {
-        type: 'text',
-        content: 'hello',
+        type: 'element',
+        name: 'text',
+        elements: [
+          {
+            type: 'element',
+            name: 'content',
+            elements: [{ type: 'text', text: 'hello' }],
+          },
+        ],
       },
       {
         type: 'command',
         input: 'echo "unclosed quote',
       },
       {
-        type: 'text',
-        content: 'world',
+        type: 'element',
+        name: 'text',
+        elements: [
+          {
+            type: 'element',
+            name: 'content',
+            elements: [{ type: 'text', text: 'world' }],
+          },
+        ],
       },
     ])
 
@@ -157,17 +228,23 @@ describe('parseContent', () => {
     const parsedCommands = parseCommands(parsed, 'tag-composer')
 
     expect(parsedCommands[0]).toMatchObject({
-      type: { name: 'command', attrs: { name: 'echo' } },
+      type: 'element',
+      name: 'command',
+      attributes: { name: 'echo' },
       commandName: 'echo',
     })
 
     expect(parsedCommands[1]).toMatchObject({
-      type: { name: 'command', attrs: { name: 'grep' } },
+      type: 'element',
+      name: 'command',
+      attributes: { name: 'grep' },
       commandName: 'grep',
     })
 
     expect(parsedCommands[2]).toMatchObject({
-      type: { name: 'command', attrs: { name: 'ls' } },
+      type: 'element',
+      name: 'command',
+      attributes: { name: 'ls' },
       commandName: 'ls',
     })
   })
@@ -181,12 +258,16 @@ describe('parseContent', () => {
     const parsedCommands = parseCommands(parsed)
 
     expect(parsedCommands[0]).toMatchObject({
-      type: { name: 'command', attrs: { name: 'echo' } },
+      type: 'element',
+      name: 'command',
+      attributes: { name: 'echo' },
       commandName: 'echo',
     })
 
     expect(parsedCommands[1]).toMatchObject({
-      type: { name: 'command', attrs: { name: 'grep' } },
+      type: 'element',
+      name: 'command',
+      attributes: { name: 'grep' },
       commandName: 'grep',
     })
   })
@@ -203,20 +284,41 @@ describe('parseContent', () => {
 
     expect(parsed).toEqual([
       {
-        type: { name: 'command', attrs: { name: testScriptPath } },
-        input: `${testScriptPath} --exit-code 42 --stdout "hello world" --stderr "error message"`,
+        type: 'element',
+        name: 'command',
+        attributes: { name: testScriptPath },
         commandName: testScriptPath,
         ast: expect.any(Object),
-        children: undefined,
-        exit: {
-          name: 'exit',
-          attrs: {
-            status: 'failure',
-            code: '42',
+        elements: expect.arrayContaining([
+          {
+            type: 'element',
+            name: 'input',
+            elements: [
+              {
+                type: 'text',
+                text: `${testScriptPath} --exit-code 42 --stdout "hello world" --stderr "error message"`,
+              },
+            ],
           },
-        },
-        stdout: 'hello world\n',
-        stderr: 'error message\n',
+          {
+            type: 'element',
+            name: 'exit',
+            attributes: {
+              status: 'failure',
+              code: '42',
+            },
+          },
+          {
+            type: 'element',
+            name: 'stdout',
+            elements: [{ type: 'text', text: 'hello world' }],
+          },
+          {
+            type: 'element',
+            name: 'stderr',
+            elements: [{ type: 'text', text: 'error message' }],
+          },
+        ]),
       },
     ])
   })

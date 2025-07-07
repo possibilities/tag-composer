@@ -84,16 +84,23 @@ function parseCommand(unparsedCommand: UnparsedCommandLine): CommandLine {
   const commandName = command.name?.text || 'unknown'
 
   return {
-    type: { name: 'command', attrs: { name: commandName } },
-    input: unparsedCommand.input,
+    type: 'element',
+    name: 'command',
+    attributes: { name: commandName },
+    elements: [
+      {
+        type: 'element',
+        name: 'input',
+        elements: [{ type: 'text', text: unparsedCommand.input }],
+      },
+    ],
     commandName,
     ast,
-    children: unparsedCommand.children,
-  }
+  } as CommandLine
 }
 
 export function parseCommands(
-  lines: ParsedLine[],
+  lines: (ParsedLine | UnparsedCommandLine)[],
   callingCommandName?: string,
 ): ParsedLine[] {
   return lines.map(line => {
@@ -107,13 +114,27 @@ export function parseCommands(
       }
     }
 
-    if (line.children && Array.isArray(line.children)) {
+    if ('elements' in line && line.elements) {
+      const processedElements = line.elements.map((elem: any) => {
+        if ('type' in elem && elem.type === 'command' && 'input' in elem) {
+          return parseCommands(
+            [elem as UnparsedCommandLine],
+            callingCommandName,
+          )[0]
+        }
+        if (elem.type === 'element' && elem.elements) {
+          const processed = parseCommands([elem], callingCommandName)[0]
+          return processed
+        }
+        return elem
+      })
+
       return {
         ...line,
-        children: parseCommands(line.children, callingCommandName),
-      }
+        elements: processedElements,
+      } as ParsedLine
     }
 
-    return line
+    return line as ParsedLine
   })
 }

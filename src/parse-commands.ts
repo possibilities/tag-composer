@@ -6,7 +6,7 @@ import {
   CommandLine,
   UnparsedCommandLine,
 } from './types.js'
-import { createCommand } from './create-command.js'
+import { createCliCommand } from './create-cli-command.js'
 
 export function parseCommand(
   unparsedCommand: UnparsedCommandLine,
@@ -90,7 +90,7 @@ export function parseCommand(
 
   if (isCallingCommand) {
     try {
-      const program = createCommand()
+      const program = createCliCommand()
 
       const args: string[] = []
       if (command.name?.text) {

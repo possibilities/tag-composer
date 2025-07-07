@@ -3,7 +3,7 @@ import packageJson from '../package.json' assert { type: 'json' }
 import { existsSync } from 'fs'
 import { extname } from 'path'
 
-export function createCommand(): Command {
+export function createCliCommand(): Command {
   const program = new Command()
 
   program

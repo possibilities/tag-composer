@@ -1,7 +1,7 @@
-import { createCommand } from './create-command.js'
+import { createCliCommand } from './create-cli-command.js'
 
 async function main() {
-  const program = createCommand()
+  const program = createCliCommand()
 
   try {
     program.exitOverride()

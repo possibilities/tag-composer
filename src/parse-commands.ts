@@ -7,9 +7,7 @@ import {
   UnparsedCommandLine,
 } from './types.js'
 
-export function parseCommand(
-  unparsedCommand: UnparsedCommandLine,
-): CommandLine {
+function parseCommand(unparsedCommand: UnparsedCommandLine): CommandLine {
   let ast: AstNode
   try {
     ast = bashParse(unparsedCommand.input)

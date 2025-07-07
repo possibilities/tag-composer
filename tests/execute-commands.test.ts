@@ -1,6 +1,20 @@
 import { describe, it, expect } from 'vitest'
-import { executeCommand, executeCommands } from '../src/execute-commands'
+import { executeCommands } from '../src/execute-commands'
 import { CommandLine } from '../src/types'
+import { spawnSync } from 'child_process'
+
+function executeCommand(command: string) {
+  const result = spawnSync('sh', ['-c', command], {
+    encoding: 'utf8',
+    shell: false,
+  })
+
+  return {
+    statusCode: result.status ?? 1,
+    stdout: result.stdout || '',
+    stderr: result.stderr || '',
+  }
+}
 
 describe('executeCommand', () => {
   it('should execute successful command and capture stdout', () => {

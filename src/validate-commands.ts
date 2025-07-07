@@ -1,27 +1,4 @@
-import { TypeValue, getTypeName } from './types.js'
-
-interface AstNode {
-  type: string
-  commands?: AstNode[]
-  name?: { text: string }
-  prefix?: AstNode[]
-  suffix?: AstNode[]
-  [key: string]: string | AstNode | AstNode[] | { text: string } | undefined
-}
-
-interface ParsedLine {
-  type: TypeValue
-  ast?: AstNode
-  children?: ParsedLine[]
-  [key: string]:
-    | string
-    | number
-    | boolean
-    | TypeValue
-    | AstNode
-    | ParsedLine[]
-    | undefined
-}
+import { getTypeName, AstNode, ParsedLine, isCommandLine } from './types.js'
 
 export function validateCommand(ast: AstNode): void {
   if (!ast || typeof ast !== 'object') {
@@ -65,7 +42,11 @@ export function validateCommand(ast: AstNode): void {
 
 export function validateCommands(lines: ParsedLine[]): ParsedLine[] {
   for (const line of lines) {
-    if (getTypeName(line.type) === 'command' && line.ast) {
+    if (
+      isCommandLine(line) &&
+      getTypeName(line.type) === 'command' &&
+      line.ast
+    ) {
       validateCommand(line.ast)
     }
 

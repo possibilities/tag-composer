@@ -1,4 +1,6 @@
 declare module 'bash-parser' {
-  function parse(script: string): any
+  import { AstNode } from '../types.js'
+
+  function parse(script: string): AstNode
   export default parse
 }

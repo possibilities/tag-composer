@@ -1,33 +1,9 @@
-import { TagWithAttributes, TypeValue, getTypeName } from './types.js'
-
-interface ParsedLine {
-  type: TypeValue
-  children?: ParsedLine[]
-  // Command-specific properties
-  input?: string
-  commandName?: string
-  isCallingCommand?: boolean
-  ast?: unknown
-  exit?: TagWithAttributes
-  stdout?: string
-  stderr?: string
-  // Text-specific properties
-  content?: string
-  // Allow other properties for generic types
-  [key: string]:
-    | string
-    | number
-    | boolean
-    | TypeValue
-    | TagWithAttributes
-    | ParsedLine[]
-    | undefined
-    | unknown
-}
-
-interface RenderOptions {
-  indent?: string
-}
+import {
+  TagWithAttributes,
+  getTypeName,
+  ParsedLine,
+  RenderOptions,
+} from './types.js'
 
 function renderIndent(level: number, indent: string): string {
   return indent.repeat(level)

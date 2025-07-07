@@ -42,7 +42,6 @@ describe('Full Pipeline Integration', () => {
       </document>
     `)
 
-    // Verify AST doesn't leak into output
     expect(tags).not.toContain('ast')
     expect(tags).not.toContain('Script')
     expect(tags).not.toContain('Word')
@@ -118,7 +117,6 @@ describe('Full Pipeline Integration', () => {
 
     const tags = pipeline(input)
 
-    // Check structure without asserting on dynamic values
     expect(tags).toMatch(/<document>/)
     expect(tags).toMatch(
       /<text>\s*<content>System Information Report<\/content>\s*<\/text>/,
@@ -126,7 +124,7 @@ describe('Full Pipeline Integration', () => {
     expect(tags).toMatch(
       /<command name='echo'>\s*<input>echo "Hostname: \$\(hostname\)"<\/input>/,
     )
-    // commandName is now an attribute, not a tag
+
     expect(tags).toMatch(/<exit status='success' code='0' \/>/)
     expect(tags).toMatch(/<command name='pwd'>\s*<input>pwd<\/input>/)
     expect(tags).toMatch(/<command name='false'>\s*<input>false<\/input>/)

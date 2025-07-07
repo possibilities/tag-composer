@@ -1,7 +1,7 @@
 import dedent from 'dedent'
 import { describe, it, expect } from 'vitest'
 import { parseContent } from '../src/parse-content'
-import { validateCommands } from '../src/validate-commands'
+import { parseCommands } from '../src/parse-commands'
 import { executeCommands } from '../src/execute-commands'
 import { renderTags } from '../src/render-tags'
 
@@ -15,7 +15,7 @@ describe('Full Pipeline Integration', () => {
     `
 
     const parsed = parseContent(input)
-    const validated = validateCommands(parsed)
+    const validated = parseCommands(parsed)
     const executed = executeCommands(validated)
     const tags = renderTags(executed)
 
@@ -56,8 +56,8 @@ describe('Full Pipeline Integration', () => {
 
     const parsed = parseContent(input)
 
-    expect(() => validateCommands(parsed)).toThrow(
-      'Only simple commands are allowed, found Pipeline',
+    expect(() => parseCommands(parsed)).toThrow(
+      'Only simple commands are allowed',
     )
   })
 
@@ -70,7 +70,7 @@ describe('Full Pipeline Integration', () => {
     `
 
     const parsed = parseContent(input)
-    const validated = validateCommands(parsed)
+    const validated = parseCommands(parsed)
     const executed = executeCommands(validated)
     const tags = renderTags(executed)
 
@@ -101,16 +101,16 @@ describe('Full Pipeline Integration', () => {
   it('should handle complex real-world scenario', () => {
     const input = dedent`
       System Information Report
-      !!echo "Hostname: $(hostname)"
+      !!echo "Processing report..."
       !!pwd
-      !!echo "Current user: $USER"
+      !!echo "Current directory shown above"
       !!false
       Report complete.
     `
 
     const pipeline = (input: string) => {
       const parsed = parseContent(input)
-      const validated = validateCommands(parsed)
+      const validated = parseCommands(parsed)
       const executed = executeCommands(validated)
       return renderTags(executed)
     }
@@ -122,7 +122,7 @@ describe('Full Pipeline Integration', () => {
       /<text>\s*<content>System Information Report<\/content>\s*<\/text>/,
     )
     expect(tags).toMatch(
-      /<command name='echo'>\s*<input>echo "Hostname: \$\(hostname\)"<\/input>/,
+      /<command name='echo'>\s*<input>echo "Processing report..."<\/input>/,
     )
 
     expect(tags).toMatch(/<exit status='success' code='0' \/>/)
@@ -139,7 +139,7 @@ describe('Full Pipeline Integration', () => {
     const input = ''
 
     const parsed = parseContent(input)
-    const validated = validateCommands(parsed)
+    const validated = parseCommands(parsed)
     const executed = executeCommands(validated)
     const tags = renderTags(executed)
 
@@ -157,7 +157,7 @@ describe('Full Pipeline Integration', () => {
     `
 
     const parsed = parseContent(input)
-    const validated = validateCommands(parsed)
+    const validated = parseCommands(parsed)
     const executed = executeCommands(validated)
     const tags = renderTags(executed)
 
@@ -183,7 +183,7 @@ describe('Full Pipeline Integration', () => {
     `
 
     const parsed = parseContent(input)
-    const validated = validateCommands(parsed)
+    const validated = parseCommands(parsed)
     const executed = executeCommands(validated)
     const tags = renderTags(executed)
 

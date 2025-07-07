@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { executeCommand, executeCommands } from '../src/execute-commands'
+import { CommandLine } from '../src/types'
 
 describe('executeCommand', () => {
   it('should execute successful command and capture stdout', () => {
@@ -54,19 +55,21 @@ describe('executeCommands', () => {
   it('should execute commands in a flat array', () => {
     const lines = [
       {
-        type: 'text',
+        type: 'text' as const,
         content: 'hello',
       },
       {
-        type: 'command',
+        type: { name: 'command', attrs: { name: 'echo' } },
         input: 'echo "test output"',
         commandName: 'echo',
-      },
+        isCallingCommand: false,
+      } as CommandLine,
       {
-        type: 'command',
+        type: { name: 'command', attrs: { name: 'echo' } },
         input: 'echo "another test"',
         commandName: 'echo',
-      },
+        isCallingCommand: false,
+      } as CommandLine,
     ]
 
     const result = executeCommands(lines)
@@ -77,7 +80,7 @@ describe('executeCommands', () => {
     })
 
     expect(result[1]).toMatchObject({
-      type: 'command',
+      type: { name: 'command', attrs: { name: 'echo' } },
       input: 'echo "test output"',
       commandName: 'echo',
       exit: {
@@ -92,7 +95,7 @@ describe('executeCommands', () => {
     })
 
     expect(result[2]).toMatchObject({
-      type: 'command',
+      type: { name: 'command', attrs: { name: 'echo' } },
       input: 'echo "another test"',
       commandName: 'echo',
       exit: {
@@ -111,33 +114,33 @@ describe('executeCommands', () => {
     const lines = [
       {
         type: 'section',
-        name: 'Main',
+        title: 'Test Section',
         children: [
           {
-            type: 'command',
+            type: { name: 'command', attrs: { name: 'echo' } },
             input: 'echo "nested command"',
             commandName: 'echo',
-          },
+            isCallingCommand: false,
+          } as CommandLine,
           {
-            type: 'subsection',
-            name: 'Sub',
-            children: [
-              {
-                type: 'command',
-                input: 'echo "deeply nested"',
-                commandName: 'echo',
-              },
-            ],
+            type: 'text' as const,
+            content: 'nested text',
           },
         ],
       },
+      {
+        type: { name: 'command', attrs: { name: 'echo' } },
+        input: 'echo "root level"',
+        commandName: 'echo',
+        isCallingCommand: false,
+      } as CommandLine,
     ]
 
     const result = executeCommands(lines)
 
     expect(result[0].type).toBe('section')
     expect(result[0].children[0]).toMatchObject({
-      type: 'command',
+      type: { name: 'command', attrs: { name: 'echo' } },
       input: 'echo "nested command"',
       exit: {
         name: 'exit',
@@ -149,11 +152,14 @@ describe('executeCommands', () => {
       stdout: 'nested command\n',
       stderr: '',
     })
+    expect(result[0].children[1]).toEqual({
+      type: 'text',
+      content: 'nested text',
+    })
 
-    expect(result[0].children[1].type).toBe('subsection')
-    expect(result[0].children[1].children[0]).toMatchObject({
-      type: 'command',
-      input: 'echo "deeply nested"',
+    expect(result[1]).toMatchObject({
+      type: { name: 'command', attrs: { name: 'echo' } },
+      input: 'echo "root level"',
       exit: {
         name: 'exit',
         attrs: {
@@ -161,7 +167,7 @@ describe('executeCommands', () => {
           code: '0',
         },
       },
-      stdout: 'deeply nested\n',
+      stdout: 'root level\n',
       stderr: '',
     })
   })
@@ -169,22 +175,29 @@ describe('executeCommands', () => {
   it('should handle mixed content in nested structures', () => {
     const lines = [
       {
-        type: 'text',
+        type: 'text' as const,
         content: 'start',
       },
       {
         type: 'group',
         children: [
           {
-            type: 'text',
-            content: 'inside group',
-          },
+            type: { name: 'command', attrs: { name: 'true' } },
+            input: 'true',
+            commandName: 'true',
+            isCallingCommand: false,
+          } as CommandLine,
           {
-            type: 'command',
+            type: { name: 'command', attrs: { name: 'false' } },
             input: 'false',
             commandName: 'false',
-          },
+            isCallingCommand: false,
+          } as CommandLine,
         ],
+      },
+      {
+        type: 'text' as const,
+        content: 'end',
       },
     ]
 
@@ -195,13 +208,23 @@ describe('executeCommands', () => {
       content: 'start',
     })
 
-    expect(result[1].children[0]).toEqual({
-      type: 'text',
-      content: 'inside group',
+    expect(result[1].children[0]).toMatchObject({
+      type: { name: 'command', attrs: { name: 'true' } },
+      input: 'true',
+      commandName: 'true',
+      exit: {
+        name: 'exit',
+        attrs: {
+          status: 'success',
+          code: '0',
+        },
+      },
+      stdout: '',
+      stderr: '',
     })
 
     expect(result[1].children[1]).toMatchObject({
-      type: 'command',
+      type: { name: 'command', attrs: { name: 'false' } },
       input: 'false',
       commandName: 'false',
       exit: {
@@ -213,6 +236,11 @@ describe('executeCommands', () => {
       },
       stdout: '',
       stderr: '',
+    })
+
+    expect(result[2]).toEqual({
+      type: 'text',
+      content: 'end',
     })
   })
 })

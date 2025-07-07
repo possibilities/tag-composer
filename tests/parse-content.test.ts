@@ -1,7 +1,7 @@
 import dedent from 'dedent'
 import { describe, it, expect } from 'vitest'
 import { parseContent } from '../src/parse-content'
-import { validateCommands } from '../src/validate-commands'
+import { parseCommands } from '../src/parse-commands'
 import { executeCommands } from '../src/execute-commands'
 import path from 'path'
 
@@ -24,23 +24,47 @@ describe('parseContent', () => {
     ])
   })
 
-  it('should parse commands starting with !! and execute them', () => {
+  it('should parse unparsed commands starting with !!', () => {
     const script = dedent`
       hello world
       !!echo "test"
       goodbye world
     `
-    const parsed = executeCommands(validateCommands(parseContent(script)))
+    const parsed = parseContent(script)
 
-    const parsedWithoutAst = parsed.map(line => {
-      if ('ast' in line && 'isCallingCommand' in line) {
-        const { ast, isCallingCommand, ...rest } = line
+    expect(parsed).toEqual([
+      {
+        type: 'text',
+        content: 'hello world',
+      },
+      {
+        type: 'command',
+        input: 'echo "test"',
+      },
+      {
+        type: 'text',
+        content: 'goodbye world',
+      },
+    ])
+  })
+
+  it('should parse and execute commands through the full pipeline', () => {
+    const script = dedent`
+      hello world
+      !!echo "test"
+      goodbye world
+    `
+    const parsed = executeCommands(parseCommands(parseContent(script)))
+
+    const cleanedResult = parsed.map(line => {
+      if ('isCallingCommand' in line) {
+        const { isCallingCommand, ...rest } = line
         return rest
       }
       return line
     })
 
-    expect(parsedWithoutAst).toEqual([
+    expect(cleanedResult).toEqual([
       {
         type: 'text',
         content: 'hello world',
@@ -79,7 +103,7 @@ describe('parseContent', () => {
   it('should throw error for command with only whitespace', () => {
     const script = dedent`
       hello
-      !!
+      !!   
       world
     `
     expect(() => parseContent(script)).toThrow(
@@ -87,58 +111,94 @@ describe('parseContent', () => {
     )
   })
 
-  it('should throw error for invalid bash syntax', () => {
+  it('should parse commands with invalid syntax without throwing', () => {
     const script = dedent`
       hello
       !!echo "unclosed quote
       world
     `
-    expect(() => parseContent(script)).toThrow(
-      /Parse error at line 2: Invalid bash syntax/,
-    )
+    // parseContent should NOT throw for invalid syntax - that's parseCommands job
+    const parsed = parseContent(script)
+    expect(parsed).toEqual([
+      {
+        type: 'text',
+        content: 'hello',
+      },
+      {
+        type: 'command',
+        input: 'echo "unclosed quote',
+      },
+      {
+        type: 'text',
+        content: 'world',
+      },
+    ])
+
+    // But parseCommands should throw
+    expect(() => parseCommands(parsed)).toThrow(/Invalid bash syntax/)
   })
 
-  it('should identify calling command when names match', () => {
+  it('should parse unparsed commands that will be identified as calling commands later', () => {
     const script = dedent`
       !!echo "first command"
       !!grep "pattern"
       !!echo "third command"
     `
-    const parsed = parseContent(script, 'echo')
+    const parsed = parseContent(script)
 
-    expect(parsed[0]).toMatchObject({
+    // parseContent no longer handles callingCommandName
+    expect(parsed).toEqual([
+      {
+        type: 'command',
+        input: 'echo "first command"',
+      },
+      {
+        type: 'command',
+        input: 'grep "pattern"',
+      },
+      {
+        type: 'command',
+        input: 'echo "third command"',
+      },
+    ])
+
+    // parseCommands handles callingCommandName
+    const parsedCommands = parseCommands(parsed, 'echo')
+
+    expect(parsedCommands[0]).toMatchObject({
       type: { name: 'command', attrs: { name: 'echo' } },
       commandName: 'echo',
       isCallingCommand: true,
     })
 
-    expect(parsed[1]).toMatchObject({
+    expect(parsedCommands[1]).toMatchObject({
       type: { name: 'command', attrs: { name: 'grep' } },
       commandName: 'grep',
       isCallingCommand: false,
     })
 
-    expect(parsed[2]).toMatchObject({
+    expect(parsedCommands[2]).toMatchObject({
       type: { name: 'command', attrs: { name: 'echo' } },
       commandName: 'echo',
       isCallingCommand: true,
     })
   })
 
-  it('should set isCallingCommand to false when no calling command provided', () => {
+  it('should parse commands that default to not being calling commands', () => {
     const script = dedent`
       !!echo "test"
       !!grep "pattern"
     `
     const parsed = parseContent(script)
+    const parsedCommands = parseCommands(parsed)
 
-    expect(parsed[0]).toMatchObject({
+    expect(parsedCommands[0]).toMatchObject({
       type: { name: 'command', attrs: { name: 'echo' } },
       commandName: 'echo',
       isCallingCommand: false,
     })
 
-    expect(parsed[1]).toMatchObject({
+    expect(parsedCommands[1]).toMatchObject({
       type: { name: 'command', attrs: { name: 'grep' } },
       commandName: 'grep',
       isCallingCommand: false,
@@ -153,17 +213,17 @@ describe('parseContent', () => {
     const script = dedent`
       !!${testScriptPath} --exit-code 42 --stdout "hello world" --stderr "error message"
     `
-    const parsed = executeCommands(validateCommands(parseContent(script)))
+    const parsed = executeCommands(parseCommands(parseContent(script)))
 
-    const parsedWithoutAst = parsed.map(line => {
-      if ('ast' in line && 'isCallingCommand' in line) {
-        const { ast, isCallingCommand, ...rest } = line
+    const cleanedResult = parsed.map(line => {
+      if ('isCallingCommand' in line) {
+        const { isCallingCommand, ...rest } = line
         return rest
       }
       return line
     })
 
-    expect(parsedWithoutAst).toEqual([
+    expect(cleanedResult).toEqual([
       {
         type: { name: 'command', attrs: { name: testScriptPath } },
         input: `${testScriptPath} --exit-code 42 --stdout "hello world" --stderr "error message"`,
@@ -181,12 +241,23 @@ describe('parseContent', () => {
     ])
   })
 
-  it('should throw error for compound commands', () => {
+  it('should throw error for compound commands in parse phase', () => {
     const script = dedent`
       !!echo hello | grep hello
     `
-    expect(() => validateCommands(parseContent(script))).toThrow(
-      'Only simple commands are allowed, found Pipeline',
+    const parsed = parseContent(script)
+
+    // parseContent succeeds
+    expect(parsed).toEqual([
+      {
+        type: 'command',
+        input: 'echo hello | grep hello',
+      },
+    ])
+
+    // parseCommands throws
+    expect(() => parseCommands(parsed)).toThrow(
+      'Only simple commands are allowed',
     )
   })
 })

@@ -24,19 +24,24 @@ export interface TextLine {
   children?: ParsedLine[]
 }
 
+export interface UnparsedCommandLine {
+  type: 'command'
+  input: string
+  children?: ParsedLine[]
+}
+
 export interface CommandLine {
   type: TypeValue
   input: string
   commandName: string
   isCallingCommand: boolean
-  ast?: AstNode
   exit?: TagWithAttributes
   stdout?: string
   stderr?: string
   children?: ParsedLine[]
 }
 
-export type ParsedLine = TextLine | CommandLine
+export type ParsedLine = TextLine | UnparsedCommandLine | CommandLine
 
 export interface ExecutionResult {
   statusCode: number
@@ -49,7 +54,13 @@ export interface RenderOptions {
 }
 
 export function isCommandLine(line: ParsedLine): line is CommandLine {
-  return line.type !== 'text'
+  return typeof line.type === 'object' && line.type.name === 'command'
+}
+
+export function isUnparsedCommandLine(
+  line: ParsedLine,
+): line is UnparsedCommandLine {
+  return line.type === 'command'
 }
 
 export function isTextLine(line: ParsedLine): line is TextLine {

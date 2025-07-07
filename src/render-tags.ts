@@ -38,7 +38,7 @@ function renderLine(line: ParsedLine, level: number, indent: string): string[] {
   }
 
   for (const [key, value] of Object.entries(rest)) {
-    if (key === 'ast' || key === 'isCallingCommand' || key === 'commandName') {
+    if (key === 'isCallingCommand' || key === 'commandName') {
       continue
     }
 

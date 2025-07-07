@@ -1,8 +1,13 @@
 import bashParse from 'bash-parser'
+import { TagWithAttributes, TypeValue } from './types.js'
 
 interface AstNode {
   type: string
-  [key: string]: any
+  commands?: AstNode[]
+  name?: { text: string }
+  prefix?: AstNode[]
+  suffix?: AstNode[]
+  [key: string]: string | AstNode | AstNode[] | { text: string } | undefined
 }
 
 interface TextLine {
@@ -12,12 +17,12 @@ interface TextLine {
 }
 
 interface CommandLine {
-  type: 'command'
+  type: TypeValue
   input: string
   commandName: string
   isCallingCommand: boolean
   ast?: AstNode
-  statusCode?: number
+  exit?: TagWithAttributes
   stdout?: string
   stderr?: string
   children?: ParsedLine[]
@@ -57,7 +62,7 @@ export function parseContent(
             : firstCommand?.type || 'unknown'
 
         const commandLine: CommandLine = {
-          type: 'command',
+          type: { name: 'command', attrs: { name: commandName } },
           input: line.substring(2),
           commandName,
           isCallingCommand: callingCommandName === commandName,

@@ -80,7 +80,13 @@ describe('executeCommands', () => {
       type: 'command',
       input: 'echo "test output"',
       commandName: 'echo',
-      statusCode: 0,
+      exit: {
+        name: 'exit',
+        attrs: {
+          status: 'success',
+          code: '0',
+        },
+      },
       stdout: 'test output\n',
       stderr: '',
     })
@@ -89,7 +95,13 @@ describe('executeCommands', () => {
       type: 'command',
       input: 'echo "another test"',
       commandName: 'echo',
-      statusCode: 0,
+      exit: {
+        name: 'exit',
+        attrs: {
+          status: 'success',
+          code: '0',
+        },
+      },
       stdout: 'another test\n',
       stderr: '',
     })
@@ -127,7 +139,13 @@ describe('executeCommands', () => {
     expect(result[0].children[0]).toMatchObject({
       type: 'command',
       input: 'echo "nested command"',
-      statusCode: 0,
+      exit: {
+        name: 'exit',
+        attrs: {
+          status: 'success',
+          code: '0',
+        },
+      },
       stdout: 'nested command\n',
       stderr: '',
     })
@@ -136,7 +154,13 @@ describe('executeCommands', () => {
     expect(result[0].children[1].children[0]).toMatchObject({
       type: 'command',
       input: 'echo "deeply nested"',
-      statusCode: 0,
+      exit: {
+        name: 'exit',
+        attrs: {
+          status: 'success',
+          code: '0',
+        },
+      },
       stdout: 'deeply nested\n',
       stderr: '',
     })
@@ -180,7 +204,13 @@ describe('executeCommands', () => {
       type: 'command',
       input: 'false',
       commandName: 'false',
-      statusCode: 1,
+      exit: {
+        name: 'exit',
+        attrs: {
+          status: 'failure',
+          code: '1',
+        },
+      },
       stdout: '',
       stderr: '',
     })

@@ -1,4 +1,5 @@
 import { spawnSync } from 'child_process'
+import { TagWithAttributes, TypeValue, getTypeName } from './types.js'
 
 export interface ExecutionResult {
   statusCode: number
@@ -7,14 +8,25 @@ export interface ExecutionResult {
 }
 
 interface ParsedLine {
-  type: string
+  type: TypeValue
   input?: string
   commandName?: string
-  statusCode?: number
+  exit?: TagWithAttributes
   stdout?: string
   stderr?: string
   children?: ParsedLine[]
-  [key: string]: any
+  content?: string
+  ast?: unknown
+  isCallingCommand?: boolean
+  [key: string]:
+    | string
+    | number
+    | boolean
+    | TypeValue
+    | TagWithAttributes
+    | ParsedLine[]
+    | undefined
+    | unknown
 }
 
 export function executeCommand(command: string): ExecutionResult {
@@ -34,9 +46,15 @@ export function executeCommands(lines: ParsedLine[]): ParsedLine[] {
   return lines.map(line => {
     const newLine = { ...line }
 
-    if (line.type === 'command' && line.input) {
+    if (getTypeName(line.type) === 'command' && line.input) {
       const result = executeCommand(line.input)
-      newLine.statusCode = result.statusCode
+      newLine.exit = {
+        name: 'exit',
+        attrs: {
+          status: result.statusCode === 0 ? 'success' : 'failure',
+          code: result.statusCode.toString(),
+        },
+      }
       newLine.stdout = result.stdout
       newLine.stderr = result.stderr
     }

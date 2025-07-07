@@ -63,9 +63,15 @@ describe('validateCommand', () => {
   })
 
   it('should reject invalid AST', () => {
-    expect(() => validateCommand(null as any)).toThrow('Invalid AST')
-    expect(() => validateCommand(undefined as any)).toThrow('Invalid AST')
-    expect(() => validateCommand('string' as any)).toThrow('Invalid AST')
+    expect(() => validateCommand(null as unknown as { type: string })).toThrow(
+      'Invalid AST',
+    )
+    expect(() =>
+      validateCommand(undefined as unknown as { type: string }),
+    ).toThrow('Invalid AST')
+    expect(() =>
+      validateCommand('string' as unknown as { type: string }),
+    ).toThrow('Invalid AST')
   })
 
   it('should reject non-Script root node', () => {

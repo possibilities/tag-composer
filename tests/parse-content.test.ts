@@ -33,8 +33,11 @@ describe('parseContent', () => {
     const parsed = executeCommands(validateCommands(parseContent(script)))
 
     const parsedWithoutAst = parsed.map(line => {
-      const { ast, isCallingCommand, ...rest } = line as any
-      return rest
+      if ('ast' in line && 'isCallingCommand' in line) {
+        const { ast, isCallingCommand, ...rest } = line
+        return rest
+      }
+      return line
     })
 
     expect(parsedWithoutAst).toEqual([
@@ -43,10 +46,16 @@ describe('parseContent', () => {
         content: 'hello world',
       },
       {
-        type: 'command',
+        type: { name: 'command', attrs: { name: 'echo' } },
         input: 'echo "test"',
         commandName: 'echo',
-        statusCode: 0,
+        exit: {
+          name: 'exit',
+          attrs: {
+            status: 'success',
+            code: '0',
+          },
+        },
         stdout: 'test\n',
         stderr: '',
       },
@@ -98,19 +107,19 @@ describe('parseContent', () => {
     const parsed = parseContent(script, 'echo')
 
     expect(parsed[0]).toMatchObject({
-      type: 'command',
+      type: { name: 'command', attrs: { name: 'echo' } },
       commandName: 'echo',
       isCallingCommand: true,
     })
 
     expect(parsed[1]).toMatchObject({
-      type: 'command',
+      type: { name: 'command', attrs: { name: 'grep' } },
       commandName: 'grep',
       isCallingCommand: false,
     })
 
     expect(parsed[2]).toMatchObject({
-      type: 'command',
+      type: { name: 'command', attrs: { name: 'echo' } },
       commandName: 'echo',
       isCallingCommand: true,
     })
@@ -124,13 +133,13 @@ describe('parseContent', () => {
     const parsed = parseContent(script)
 
     expect(parsed[0]).toMatchObject({
-      type: 'command',
+      type: { name: 'command', attrs: { name: 'echo' } },
       commandName: 'echo',
       isCallingCommand: false,
     })
 
     expect(parsed[1]).toMatchObject({
-      type: 'command',
+      type: { name: 'command', attrs: { name: 'grep' } },
       commandName: 'grep',
       isCallingCommand: false,
     })
@@ -147,16 +156,25 @@ describe('parseContent', () => {
     const parsed = executeCommands(validateCommands(parseContent(script)))
 
     const parsedWithoutAst = parsed.map(line => {
-      const { ast, isCallingCommand, ...rest } = line as any
-      return rest
+      if ('ast' in line && 'isCallingCommand' in line) {
+        const { ast, isCallingCommand, ...rest } = line
+        return rest
+      }
+      return line
     })
 
     expect(parsedWithoutAst).toEqual([
       {
-        type: 'command',
+        type: { name: 'command', attrs: { name: testScriptPath } },
         input: `${testScriptPath} --exit-code 42 --stdout "hello world" --stderr "error message"`,
         commandName: testScriptPath,
-        statusCode: 42,
+        exit: {
+          name: 'exit',
+          attrs: {
+            status: 'failure',
+            code: '42',
+          },
+        },
         stdout: 'hello world\n',
         stderr: 'error message\n',
       },

@@ -252,7 +252,7 @@ describe('renderTags', () => {
     })
 
     it('should handle empty input', () => {
-      const lines: any[] = []
+      const lines: Array<{ type: string; [key: string]: unknown }> = []
 
       const result = renderTags(lines)
 
@@ -293,10 +293,16 @@ describe('renderTags', () => {
     it('should render command nodes from parser', () => {
       const lines = [
         {
-          type: 'command',
+          type: { name: 'command', attrs: { name: 'echo' } },
           input: 'echo "test"',
           commandName: 'echo',
-          statusCode: 0,
+          exit: {
+            name: 'exit',
+            attrs: {
+              status: 'success',
+              code: '0',
+            },
+          },
           stdout: 'test\n',
           stderr: '',
         },
@@ -308,7 +314,7 @@ describe('renderTags', () => {
         <document>
           <command name='echo'>
             <input>echo "test"</input>
-            <statusCode>0</statusCode>
+            <exit status='success' code='0' />
             <stdout>test</stdout>
             <stderr />
           </command>
@@ -323,10 +329,16 @@ describe('renderTags', () => {
           content: 'Starting script',
         },
         {
-          type: 'command',
+          type: { name: 'command', attrs: { name: 'false' } },
           input: 'false',
           commandName: 'false',
-          statusCode: 1,
+          exit: {
+            name: 'exit',
+            attrs: {
+              status: 'failure',
+              code: '1',
+            },
+          },
           stdout: '',
           stderr: 'error occurred\n',
         },
@@ -345,7 +357,7 @@ describe('renderTags', () => {
           </text>
           <command name='false'>
             <input>false</input>
-            <statusCode>1</statusCode>
+            <exit status='failure' code='1' />
             <stdout />
             <stderr>error occurred</stderr>
           </command>

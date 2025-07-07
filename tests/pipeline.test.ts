@@ -26,13 +26,13 @@ describe('Full Pipeline Integration', () => {
         </text>
         <command name='echo'>
           <input>echo "Hello from the pipeline"</input>
-          <statusCode>0</statusCode>
+          <exit status='success' code='0' />
           <stdout>Hello from the pipeline</stdout>
           <stderr />
         </command>
         <command name='echo'>
           <input>echo "Testing 123"</input>
-          <statusCode>0</statusCode>
+          <exit status='success' code='0' />
           <stdout>Testing 123</stdout>
           <stderr />
         </command>
@@ -82,13 +82,13 @@ describe('Full Pipeline Integration', () => {
         </text>
         <command name='false'>
           <input>false</input>
-          <statusCode>1</statusCode>
+          <exit status='failure' code='1' />
           <stdout />
           <stderr />
         </command>
         <command name='sh'>
           <input>sh -c "echo 'Error message' >&2 && exit 42"</input>
-          <statusCode>42</statusCode>
+          <exit status='failure' code='42' />
           <stdout />
           <stderr>Error message</stderr>
         </command>
@@ -127,10 +127,10 @@ describe('Full Pipeline Integration', () => {
       /<command name='echo'>\s*<input>echo "Hostname: \$\(hostname\)"<\/input>/,
     )
     // commandName is now an attribute, not a tag
-    expect(tags).toMatch(/<statusCode>0<\/statusCode>/)
+    expect(tags).toMatch(/<exit status='success' code='0' \/>/)
     expect(tags).toMatch(/<command name='pwd'>\s*<input>pwd<\/input>/)
     expect(tags).toMatch(/<command name='false'>\s*<input>false<\/input>/)
-    expect(tags).toMatch(/<statusCode>1<\/statusCode>/)
+    expect(tags).toMatch(/<exit status='failure' code='1' \/>/)
     expect(tags).toMatch(
       /<text>\s*<content>Report complete\.<\/content>\s*<\/text>/,
     )
@@ -193,13 +193,13 @@ describe('Full Pipeline Integration', () => {
       <document>
         <command name='echo'>
           <input>echo "<tag>Special & chars</tag>"</input>
-          <statusCode>0</statusCode>
+          <exit status='success' code='0' />
           <stdout><tag>Special & chars</tag></stdout>
           <stderr />
         </command>
         <command name='echo'>
           <input>echo "Multiple words with spaces"</input>
-          <statusCode>0</statusCode>
+          <exit status='success' code='0' />
           <stdout>Multiple words with spaces</stdout>
           <stderr />
         </command>

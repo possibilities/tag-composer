@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { execSync } from 'child_process'
+import { execSync, spawn } from 'child_process'
 import dedent from 'dedent'
 
 describe('CLI Integration', () => {
@@ -83,7 +83,7 @@ describe('CLI Integration', () => {
     `)
   })
 
-  it('should validate tag-composer commands when callingCommandName is set', () => {
+  it('should handle tag-composer commands with invalid files', () => {
     const content = dedent`
       !!tag-composer nonexistent.md
     `
@@ -96,7 +96,7 @@ describe('CLI Integration', () => {
     }).toThrow()
   })
 
-  it('should pass through tag-composer validation for valid files', () => {
+  it('should replace tag-composer commands with included file content', () => {
     const validFile = join(tempDir, 'valid.md')
     writeFileSync(validFile, '# Valid file')
 
@@ -109,8 +109,15 @@ describe('CLI Integration', () => {
       encoding: 'utf-8',
     })
 
-    expect(output).toContain("<command name='tag-composer'>")
-    expect(output).toContain(`<input>tag-composer "${validFile}"</input>`)
+    // The tag-composer command should be replaced with the content of valid.md
+    expect(output).toBe(dedent`
+      <document>
+        <text>
+          <content># Valid file</content>
+        </text>
+      </document>
+    
+    `)
   })
 
   it('should handle file not found errors', () => {
@@ -130,5 +137,61 @@ describe('CLI Integration', () => {
         encoding: 'utf-8',
       })
     }).toThrow(/not a markdown file/)
+  })
+
+  it('should detect circular dependencies', () => {
+    const file1 = join(tempDir, 'circular1.md')
+    const file2 = join(tempDir, 'circular2.md')
+
+    writeFileSync(
+      file1,
+      dedent`
+      # Circular 1
+      !!tag-composer circular2.md
+    `,
+    )
+
+    writeFileSync(
+      file2,
+      dedent`
+      # Circular 2
+      !!tag-composer circular1.md
+    `,
+    )
+
+    expect(() => {
+      execSync(`node dist/cli.js "${file1}"`, {
+        encoding: 'utf-8',
+      })
+    }).toThrow(/Circular dependency detected/)
+  })
+
+  it('should skip circular dependency check with --no-recursion-check', () => {
+    const file1 = join(tempDir, 'circular1.md')
+    const file2 = join(tempDir, 'circular2.md')
+
+    writeFileSync(
+      file1,
+      dedent`
+      # Circular 1
+      !!tag-composer circular2.md
+    `,
+    )
+
+    writeFileSync(
+      file2,
+      dedent`
+      # Circular 2
+      !!tag-composer circular1.md
+    `,
+    )
+
+    const child = spawn('node', ['dist/cli.js', '--no-recursion-check', file1])
+
+    setTimeout(() => {
+      child.kill()
+    }, 100)
+
+    expect(() => child).not.toThrow()
   })
 })

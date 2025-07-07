@@ -1,5 +1,8 @@
 import dedent from 'dedent'
 import { describe, it, expect } from 'vitest'
+import { mkdtempSync, rmSync, writeFileSync } from 'fs'
+import { tmpdir } from 'os'
+import { join } from 'path'
 import { parseContent } from '../src/parse-content'
 import { parseCommands } from '../src/parse-commands'
 import { executeCommands } from '../src/execute-commands'
@@ -48,7 +51,7 @@ describe('Full Pipeline Integration', () => {
     expect(tags).not.toContain('Word')
   })
 
-  it('should handle error propagation at validation stage', () => {
+  it('should handle error propagation at parsing stage', () => {
     const input = dedent`
       Starting script
       !!echo "hello" | grep "world"
@@ -233,7 +236,7 @@ describe('Full Pipeline Integration', () => {
     `)
   })
 
-  it('should pass callingCommandName through runPipeline', () => {
+  it('should handle calling command with invalid file', () => {
     const input = dedent`
       !!tag-composer invalid-file.md
     `
@@ -241,5 +244,125 @@ describe('Full Pipeline Integration', () => {
     expect(() => runPipeline(input, 'tag-composer')).toThrow(
       /File 'invalid-file.md' not found/,
     )
+  })
+
+  it('should replace calling command with pipeline-processed content', () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'tag-composer-test-'))
+    const includedFile = join(tempDir, 'included.md')
+
+    writeFileSync(
+      includedFile,
+      dedent`
+      # Included Content
+      !!echo "From included file"
+      More text
+    `,
+    )
+
+    const input = dedent`
+      # Main Document
+      !!tag-composer ${includedFile}
+      Footer text
+    `
+
+    try {
+      const output = runPipeline(input, 'tag-composer')
+
+      expect(output).toBe(dedent`
+        <document>
+          <text>
+            <content># Main Document</content>
+          </text>
+          <text>
+            <content># Included Content</content>
+          </text>
+          <command name='echo'>
+            <input>echo "From included file"</input>
+            <exit status='success' code='0' />
+            <stdout>From included file</stdout>
+            <stderr />
+          </command>
+          <text>
+            <content>More text</content>
+          </text>
+          <text>
+            <content>Footer text</content>
+          </text>
+        </document>
+      `)
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true })
+    }
+  })
+
+  it('should prevent infinite recursion with --json flag', () => {
+    const input = dedent`
+      !!tag-composer --json test.md
+    `
+
+    expect(() => runPipeline(input, 'tag-composer')).toThrow(
+      /Cannot execute 'tag-composer' with --json flag/,
+    )
+  })
+
+  it('should handle nested includes', () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'tag-composer-test-'))
+    const nestedFile = join(tempDir, 'nested.md')
+    const middleFile = join(tempDir, 'middle.md')
+
+    writeFileSync(
+      nestedFile,
+      dedent`
+      Deeply nested content
+      !!echo "From nested"
+    `,
+    )
+
+    writeFileSync(
+      middleFile,
+      dedent`
+      Middle layer
+      !!tag-composer ${nestedFile}
+      Back to middle
+    `,
+    )
+
+    const input = dedent`
+      Top level
+      !!tag-composer ${middleFile}
+      End of top
+    `
+
+    try {
+      const output = runPipeline(input, 'tag-composer')
+
+      expect(output).toBe(dedent`
+        <document>
+          <text>
+            <content>Top level</content>
+          </text>
+          <text>
+            <content>Middle layer</content>
+          </text>
+          <text>
+            <content>Deeply nested content</content>
+          </text>
+          <command name='echo'>
+            <input>echo "From nested"</input>
+            <exit status='success' code='0' />
+            <stdout>From nested</stdout>
+            <stderr />
+          </command>
+          <text>
+            <content>Back to middle</content>
+          </text>
+          <text>
+            <content>End of top</content>
+          </text>
+        </document>
+      `)
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true })
+    }
   })
 })

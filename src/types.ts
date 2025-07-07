@@ -34,6 +34,7 @@ export interface CommandLine {
   type: TypeValue
   input: string
   commandName: string
+  ast?: AstNode
   exit?: TagWithAttributes
   stdout?: string
   stderr?: string

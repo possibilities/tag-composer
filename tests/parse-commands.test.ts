@@ -1,137 +1,38 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { parseCommand, parseCommands } from '../src/parse-commands'
 import { UnparsedCommandLine } from '../src/types'
-import { existsSync } from 'fs'
-
-vi.mock('fs', () => ({
-  existsSync: vi.fn(),
-  readFileSync: vi.fn(),
-}))
-
-// Mock the createCliCommand to avoid package.json import issues
-vi.mock('../src/create-cli-command', async () => {
-  const actual = await vi.importActual('../src/create-cli-command')
-  const { Command } = await import('commander')
-  const { existsSync, readFileSync } = await import('fs')
-  const { extname } = await import('path')
-
-  return {
-    ...actual,
-    createCliCommand: () => {
-      const program = new Command()
-
-      program
-        .name('tag-composer')
-        .description('Tag Composer CLI')
-        .version('0.1.0')
-        .argument('<file>', 'markdown file to process')
-        .allowExcessArguments(false)
-        .action((file: string) => {
-          if (!existsSync(file)) {
-            throw new Error(`Error: File '${file}' not found`)
-          }
-
-          if (extname(file).toLowerCase() !== '.md') {
-            throw new Error(
-              `Error: File '${file}' is not a markdown file (must end with .md)`,
-            )
-          }
-        })
-
-      return program
-    },
-  }
-})
 
 describe('parseCommand', () => {
-  const mockExistsSync = existsSync as unknown as ReturnType<typeof vi.fn>
-
-  // Store original values
-  const originalStdout = {
-    columns: process.stdout.columns,
-    isTTY: process.stdout.isTTY,
-    rows: process.stdout.rows,
-  }
-  const originalStderr = {
-    columns: process.stderr.columns,
-    isTTY: process.stderr.isTTY,
-    rows: process.stderr.rows,
-    write: process.stderr.write,
-  }
-  const originalStdoutWrite = process.stdout.write
-
-  beforeEach(() => {
-    vi.clearAllMocks()
-
-    // Mock stdout
-    process.stdout.columns = 80
-    process.stdout.isTTY = true
-    process.stdout.rows = 24
-
-    // Mock stderr
-    process.stderr.columns = 80
-    process.stderr.isTTY = true
-    process.stderr.rows = 24
-
-    // Mock write functions
-    process.stderr.write = vi.fn(() => true) as any
-    process.stdout.write = vi.fn(() => true) as any
-  })
-
-  afterEach(() => {
-    // Restore stdout
-    process.stdout.columns = originalStdout.columns
-    process.stdout.isTTY = originalStdout.isTTY
-    process.stdout.rows = originalStdout.rows
-
-    // Restore stderr
-    process.stderr.columns = originalStderr.columns
-    process.stderr.isTTY = originalStderr.isTTY
-    process.stderr.rows = originalStderr.rows
-    if (originalStderr.write) {
-      process.stderr.write = originalStderr.write
-    }
-    if (originalStdoutWrite) {
-      process.stdout.write = originalStdoutWrite
-    }
-  })
-
   it('should parse a simple echo command', () => {
     const unparsed: UnparsedCommandLine = {
       type: 'command',
-      input: 'echo "hello"',
+      input: 'echo "hello world"',
     }
     const result = parseCommand(unparsed)
-    expect(result.commandName).toBe('echo')
-    expect(result.type).toEqual({ name: 'command', attrs: { name: 'echo' } })
-    expect(result.input).toBe('echo "hello"')
+    expect(result).toMatchObject({
+      type: { name: 'command', attrs: { name: 'echo' } },
+      input: 'echo "hello world"',
+      commandName: 'echo',
+      ast: expect.any(Object),
+    })
   })
 
   it('should parse a command with no arguments', () => {
     const unparsed: UnparsedCommandLine = {
       type: 'command',
-      input: 'ls',
+      input: 'pwd',
     }
     const result = parseCommand(unparsed)
-    expect(result.commandName).toBe('ls')
-    expect(result.type).toEqual({ name: 'command', attrs: { name: 'ls' } })
+    expect(result.commandName).toBe('pwd')
   })
 
   it('should handle callingCommandName', () => {
     const unparsed: UnparsedCommandLine = {
       type: 'command',
-      input: 'echo "hello world"',
-    }
-    const result = parseCommand(unparsed, 'tag-composer')
-    expect(result.commandName).toBe('echo')
-
-    mockExistsSync.mockReturnValue(true)
-    const unparsed2: UnparsedCommandLine = {
-      type: 'command',
       input: 'tag-composer file.md',
     }
-    const result2 = parseCommand(unparsed2, 'tag-composer')
-    expect(result2.commandName).toBe('tag-composer')
+    const result = parseCommand(unparsed)
+    expect(result.commandName).toBe('tag-composer')
   })
 
   it('should reject empty commands', () => {
@@ -145,7 +46,7 @@ describe('parseCommand', () => {
   it('should reject commands with redirections using >', () => {
     const unparsed: UnparsedCommandLine = {
       type: 'command',
-      input: 'echo "hello" > output.txt',
+      input: 'echo "test" > file.txt',
     }
     expect(() => parseCommand(unparsed)).toThrow('Redirections are not allowed')
   })
@@ -153,7 +54,7 @@ describe('parseCommand', () => {
   it('should reject commands with redirections using <', () => {
     const unparsed: UnparsedCommandLine = {
       type: 'command',
-      input: 'cat < input.txt',
+      input: 'cat < file.txt',
     }
     expect(() => parseCommand(unparsed)).toThrow('Redirections are not allowed')
   })
@@ -161,7 +62,7 @@ describe('parseCommand', () => {
   it('should reject commands with output appending >>', () => {
     const unparsed: UnparsedCommandLine = {
       type: 'command',
-      input: 'echo "hello" >> output.txt',
+      input: 'echo "test" >> file.txt',
     }
     expect(() => parseCommand(unparsed)).toThrow('Redirections are not allowed')
   })
@@ -169,7 +70,7 @@ describe('parseCommand', () => {
   it('should reject commands with stderr redirection', () => {
     const unparsed: UnparsedCommandLine = {
       type: 'command',
-      input: 'command 2> error.log',
+      input: 'echo "test" 2> error.log',
     }
     expect(() => parseCommand(unparsed)).toThrow('Redirections are not allowed')
   })
@@ -177,7 +78,7 @@ describe('parseCommand', () => {
   it('should reject commands with combined output redirection', () => {
     const unparsed: UnparsedCommandLine = {
       type: 'command',
-      input: 'command &> all.log',
+      input: 'echo "test" &> all.log',
     }
     expect(() => parseCommand(unparsed)).toThrow(
       'Only single commands are allowed',
@@ -195,7 +96,7 @@ describe('parseCommand', () => {
   it('should reject pipes', () => {
     const unparsed: UnparsedCommandLine = {
       type: 'command',
-      input: 'echo "hello" | grep "h"',
+      input: 'echo "hello" | grep "world"',
     }
     expect(() => parseCommand(unparsed)).toThrow(
       'Only simple commands are allowed',
@@ -235,7 +136,7 @@ describe('parseCommand', () => {
   it('should reject subshells', () => {
     const unparsed: UnparsedCommandLine = {
       type: 'command',
-      input: '(echo "hello")',
+      input: '(echo "in subshell")',
     }
     expect(() => parseCommand(unparsed)).toThrow(
       'Only simple commands are allowed',
@@ -265,146 +166,13 @@ describe('parseCommand', () => {
   it('should reject invalid syntax', () => {
     const unparsed: UnparsedCommandLine = {
       type: 'command',
-      input: 'echo "unclosed string',
+      input: 'echo "unclosed',
     }
     expect(() => parseCommand(unparsed)).toThrow('Invalid bash syntax')
-  })
-
-  describe('calling command validation', () => {
-    it('should validate calling command with valid markdown file', async () => {
-      mockExistsSync.mockReturnValue(true)
-      const unparsed: UnparsedCommandLine = {
-        type: 'command',
-        input: 'tag-composer readme.md',
-      }
-      const result = await parseCommand(unparsed, 'tag-composer')
-      expect(result.commandName).toBe('tag-composer')
-    })
-
-    it('should reject calling command with missing file', async () => {
-      mockExistsSync.mockReturnValue(false)
-      const unparsed: UnparsedCommandLine = {
-        type: 'command',
-        input: 'tag-composer missing.md',
-      }
-      expect(() => parseCommand(unparsed, 'tag-composer')).toThrow(
-        "Invalid calling command: Error: File 'missing.md' not found",
-      )
-    })
-
-    it('should reject calling command with non-markdown file', async () => {
-      mockExistsSync.mockReturnValue(true)
-      const unparsed: UnparsedCommandLine = {
-        type: 'command',
-        input: 'tag-composer file.txt',
-      }
-      expect(() => parseCommand(unparsed, 'tag-composer')).toThrow(
-        "Invalid calling command: Error: File 'file.txt' is not a markdown file (must end with .md)",
-      )
-    })
-
-    it('should reject calling command with no arguments', async () => {
-      const unparsed: UnparsedCommandLine = {
-        type: 'command',
-        input: 'tag-composer',
-      }
-      expect(() => parseCommand(unparsed, 'tag-composer')).toThrow(
-        "Invalid calling command: error: missing required argument 'file'",
-      )
-    })
-
-    it('should reject calling command with too many arguments', async () => {
-      mockExistsSync.mockReturnValue(true)
-      const unparsed: UnparsedCommandLine = {
-        type: 'command',
-        input: 'tag-composer file1.md file2.md',
-      }
-      expect(() => parseCommand(unparsed, 'tag-composer')).toThrow(
-        'Invalid calling command: error: too many arguments',
-      )
-    })
-
-    it('should not validate non-calling commands', async () => {
-      const unparsed: UnparsedCommandLine = {
-        type: 'command',
-        input: 'echo "hello"',
-      }
-      const result = await parseCommand(unparsed, 'tag-composer')
-      expect(result.commandName).toBe('echo')
-      expect(mockExistsSync).not.toHaveBeenCalled()
-    })
-
-    it('should validate a command with a file path containing spaces', () => {
-      mockExistsSync.mockReturnValue(true)
-      const unparsed: UnparsedCommandLine = {
-        type: 'command',
-        input: 'tag-composer "my file.md"',
-      }
-      expect(() => parseCommand(unparsed, 'tag-composer')).not.toThrow()
-      expect(mockExistsSync).toHaveBeenCalledWith('my file.md')
-    })
-
-    it('should validate a command with single quotes', () => {
-      mockExistsSync.mockReturnValue(true)
-      const unparsed: UnparsedCommandLine = {
-        type: 'command',
-        input: "tag-composer 'another file.md'",
-      }
-      expect(() => parseCommand(unparsed, 'tag-composer')).not.toThrow()
-      expect(mockExistsSync).toHaveBeenCalledWith('another file.md')
-    })
-
-    it('should accept file with uppercase .MD extension', () => {
-      mockExistsSync.mockReturnValue(true)
-      const unparsed: UnparsedCommandLine = {
-        type: 'command',
-        input: 'tag-composer file.MD',
-      }
-      expect(() => parseCommand(unparsed, 'tag-composer')).not.toThrow()
-      expect(mockExistsSync).toHaveBeenCalledWith('file.MD')
-    })
-
-    it('should handle escaped quotes in file names', () => {
-      mockExistsSync.mockReturnValue(true)
-      const unparsed: UnparsedCommandLine = {
-        type: 'command',
-        input: 'tag-composer "file\\"with\\"quotes.md"',
-      }
-      expect(() => parseCommand(unparsed, 'tag-composer')).not.toThrow()
-      expect(mockExistsSync).toHaveBeenCalledWith('file"with"quotes.md')
-    })
-
-    it('should validate relative paths', () => {
-      mockExistsSync.mockReturnValue(true)
-      const unparsed: UnparsedCommandLine = {
-        type: 'command',
-        input: 'tag-composer ./docs/readme.md',
-      }
-      expect(() => parseCommand(unparsed, 'tag-composer')).not.toThrow()
-      expect(mockExistsSync).toHaveBeenCalledWith('./docs/readme.md')
-    })
-
-    it('should validate absolute paths', () => {
-      mockExistsSync.mockReturnValue(true)
-      const unparsed: UnparsedCommandLine = {
-        type: 'command',
-        input: 'tag-composer /home/user/project/readme.md',
-      }
-      expect(() => parseCommand(unparsed, 'tag-composer')).not.toThrow()
-      expect(mockExistsSync).toHaveBeenCalledWith(
-        '/home/user/project/readme.md',
-      )
-    })
   })
 })
 
 describe('parseCommands', () => {
-  const mockExistsSync = existsSync as unknown as ReturnType<typeof vi.fn>
-
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   it('should parse multiple lines with mixed content', async () => {
     const lines = [
       { type: 'text' as const, content: 'Some text' },
@@ -472,30 +240,17 @@ describe('parseCommands', () => {
     expect(result[2]).toMatchObject({
       commandName: 'echo',
     })
-
-    mockExistsSync.mockReturnValue(true)
-    const lines2 = [
-      { type: 'command' as const, input: 'tag-composer file.md' },
-      { type: 'command' as const, input: 'echo "hello"' },
-    ]
-
-    const result2 = parseCommands(lines2, 'tag-composer')
-
-    expect(result2[0]).toMatchObject({
-      commandName: 'tag-composer',
-    })
-    expect(result2[1]).toMatchObject({
-      commandName: 'echo',
-    })
   })
 
   it('should throw error with command context on parse failure', () => {
     const lines = [
-      { type: 'command' as const, input: 'echo "hello" > output.txt' },
+      { type: 'text' as const, content: 'Some text' },
+      { type: 'command' as const, input: 'echo "valid"' },
+      { type: 'command' as const, input: 'echo | grep' },
     ]
 
     expect(() => parseCommands(lines)).toThrow(
-      'Error parsing command "echo "hello" > output.txt": Redirections are not allowed',
+      'Error parsing command "echo | grep"',
     )
   })
 })

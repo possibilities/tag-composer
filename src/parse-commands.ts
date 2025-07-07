@@ -6,11 +6,9 @@ import {
   CommandLine,
   UnparsedCommandLine,
 } from './types.js'
-import { createCliCommand } from './create-cli-command.js'
 
 export function parseCommand(
   unparsedCommand: UnparsedCommandLine,
-  callingCommandName?: string,
 ): CommandLine {
   let ast: AstNode
   try {
@@ -86,45 +84,12 @@ export function parseCommand(
   }
 
   const commandName = command.name?.text || 'unknown'
-  const isCallingCommand = callingCommandName === commandName
-
-  if (isCallingCommand) {
-    try {
-      const program = createCliCommand()
-
-      const args: string[] = []
-      if (command.name?.text) {
-        args.push(command.name.text)
-      }
-      if (command.suffix) {
-        for (const suffixItem of command.suffix) {
-          if (
-            suffixItem.type === 'Word' &&
-            typeof suffixItem.text === 'string'
-          ) {
-            args.push(suffixItem.text)
-          }
-        }
-      }
-
-      const argv = ['node', ...args]
-
-      program.exitOverride()
-      program.configureOutput({
-        writeErr: str => process.stderr.write(str),
-      })
-      program.parse(argv)
-    } catch (error) {
-      throw new Error(
-        `Invalid calling command: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      )
-    }
-  }
 
   return {
     type: { name: 'command', attrs: { name: commandName } },
     input: unparsedCommand.input,
     commandName,
+    ast,
     children: unparsedCommand.children,
   }
 }
@@ -136,7 +101,7 @@ export function parseCommands(
   return lines.map(line => {
     if (isUnparsedCommandLine(line)) {
       try {
-        return parseCommand(line, callingCommandName)
+        return parseCommand(line)
       } catch (error) {
         throw new Error(
           `Error parsing command "${line.input}": ${error instanceof Error ? error.message : 'Unknown error'}`,

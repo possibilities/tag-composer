@@ -65,6 +65,8 @@ describe('parseContent', () => {
         type: { name: 'command', attrs: { name: 'echo' } },
         input: 'echo "test"',
         commandName: 'echo',
+        ast: expect.any(Object),
+        children: undefined,
         exit: {
           name: 'exit',
           attrs: {
@@ -204,6 +206,8 @@ describe('parseContent', () => {
         type: { name: 'command', attrs: { name: testScriptPath } },
         input: `${testScriptPath} --exit-code 42 --stdout "hello world" --stderr "error message"`,
         commandName: testScriptPath,
+        ast: expect.any(Object),
+        children: undefined,
         exit: {
           name: 'exit',
           attrs: {

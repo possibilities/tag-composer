@@ -20,8 +20,11 @@ export function executeCommand(command: string): ExecutionResult {
   }
 }
 
-export function executeCommands(lines: ParsedLine[]): ParsedLine[] {
-  return lines.map(line => {
+export function executeCommands(
+  lines: ParsedLine[],
+  callingCommandName?: string,
+): ParsedLine[] {
+  return lines.flatMap(line => {
     const newLine = { ...line }
 
     if (
@@ -29,6 +32,47 @@ export function executeCommands(lines: ParsedLine[]): ParsedLine[] {
       getTypeName(line.type) === 'command' &&
       line.input
     ) {
+      if (line.commandName === callingCommandName && line.ast) {
+        const command = line.ast.commands?.[0]
+        if (command && command.suffix) {
+          const hasJsonFlag = command.suffix.some(
+            s => typeof s === 'object' && 'text' in s && s.text === '--json',
+          )
+
+          if (hasJsonFlag) {
+            throw new Error(
+              `Error: Cannot execute '${line.commandName}' with --json flag. ` +
+                `This would cause infinite recursion.`,
+            )
+          }
+
+          const cliPath = new URL('../dist/cli.js', import.meta.url).pathname
+          const commandWithJson = `node ${cliPath} --json --no-recursion-check ${command.suffix
+            .map(s => (typeof s === 'object' && 'text' in s ? s.text : ''))
+            .filter(Boolean)
+            .join(' ')}`
+
+          const result = executeCommand(commandWithJson)
+
+          if (result.statusCode !== 0) {
+            throw new Error(
+              result.stderr ||
+                result.stdout ||
+                `Failed to execute ${line.commandName}`,
+            )
+          }
+
+          try {
+            const parsedJson: ParsedLine[] = JSON.parse(result.stdout)
+            return parsedJson
+          } catch (error) {
+            throw new Error(
+              `Failed to parse output from ${line.commandName}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            )
+          }
+        }
+      }
+
       const result = executeCommand(line.input)
       const commandLine = newLine as CommandLine
       commandLine.exit = {
@@ -43,7 +87,7 @@ export function executeCommands(lines: ParsedLine[]): ParsedLine[] {
     }
 
     if (line.children && Array.isArray(line.children)) {
-      newLine.children = executeCommands(line.children)
+      newLine.children = executeCommands(line.children, callingCommandName)
     }
 
     return newLine

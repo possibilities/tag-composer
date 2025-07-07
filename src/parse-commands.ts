@@ -42,7 +42,6 @@ export function parseCommand(
     throw new Error(`Only simple commands are allowed`)
   }
 
-  // Check for async commands (background jobs with &)
   if (command.async) {
     throw new Error('Background jobs are not allowed')
   }
@@ -60,7 +59,7 @@ export function parseCommand(
       if (suffixItem.type === 'Redirect') {
         throw new Error('Redirections are not allowed')
       }
-      // Check for heredoc markers like << or <<<
+
       if (
         suffixItem.type === 'dless' ||
         suffixItem.type === 'dlessdash' ||
@@ -68,7 +67,7 @@ export function parseCommand(
       ) {
         throw new Error('Redirections are not allowed')
       }
-      // Check for command substitution in word expansions
+
       if (suffixItem.expansion && Array.isArray(suffixItem.expansion)) {
         for (const exp of suffixItem.expansion) {
           if (exp.type === 'CommandExpansion') {
@@ -76,9 +75,8 @@ export function parseCommand(
           }
         }
       }
-      // Check if the suffix item itself is a Word with text containing command substitution
+
       if (suffixItem.type === 'Word' && typeof suffixItem.text === 'string') {
-        // Check for $() or `` command substitution patterns
         if (suffixItem.text.includes('$(') || suffixItem.text.includes('`')) {
           throw new Error('Command substitution is not allowed')
         }

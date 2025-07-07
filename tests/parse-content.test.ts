@@ -103,7 +103,7 @@ describe('parseContent', () => {
   it('should throw error for command with only whitespace', () => {
     const script = dedent`
       hello
-      !!   
+      !!
       world
     `
     expect(() => parseContent(script)).toThrow(
@@ -117,7 +117,7 @@ describe('parseContent', () => {
       !!echo "unclosed quote
       world
     `
-    // parseContent should NOT throw for invalid syntax - that's parseCommands job
+
     const parsed = parseContent(script)
     expect(parsed).toEqual([
       {
@@ -134,7 +134,6 @@ describe('parseContent', () => {
       },
     ])
 
-    // But parseCommands should throw
     expect(() => parseCommands(parsed)).toThrow(/Invalid bash syntax/)
   })
 
@@ -146,7 +145,6 @@ describe('parseContent', () => {
     `
     const parsed = parseContent(script)
 
-    // parseContent no longer handles callingCommandName
     expect(parsed).toEqual([
       {
         type: 'command',
@@ -162,7 +160,6 @@ describe('parseContent', () => {
       },
     ])
 
-    // parseCommands handles callingCommandName
     const parsedCommands = parseCommands(parsed, 'echo')
 
     expect(parsedCommands[0]).toMatchObject({
@@ -247,7 +244,6 @@ describe('parseContent', () => {
     `
     const parsed = parseContent(script)
 
-    // parseContent succeeds
     expect(parsed).toEqual([
       {
         type: 'command',
@@ -255,7 +251,6 @@ describe('parseContent', () => {
       },
     ])
 
-    // parseCommands throws
     expect(() => parseCommands(parsed)).toThrow(
       'Only simple commands are allowed',
     )

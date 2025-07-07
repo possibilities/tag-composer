@@ -15,6 +15,7 @@ interface CommandLine {
   type: 'command'
   content: string
   commandName: string
+  isCallingCommand: boolean
   ast?: AstNode
   statusCode?: number
   stdout?: string
@@ -24,7 +25,10 @@ interface CommandLine {
 
 type ParsedLine = TextLine | CommandLine
 
-export function parseContent(input: string): ParsedLine[] {
+export function parseContent(
+  input: string,
+  callingCommandName?: string,
+): ParsedLine[] {
   return input
     .split('\n')
     .filter(line => line.length > 0)
@@ -56,6 +60,7 @@ export function parseContent(input: string): ParsedLine[] {
           type: 'command',
           content: line.substring(2),
           commandName,
+          isCallingCommand: callingCommandName === commandName,
           ast,
         }
 

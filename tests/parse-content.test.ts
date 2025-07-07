@@ -33,7 +33,7 @@ describe('parseContent', () => {
     const parsed = executeCommands(validateCommands(parseContent(script)))
 
     const parsedWithoutAst = parsed.map(line => {
-      const { ast, ...rest } = line as any
+      const { ast, isCallingCommand, ...rest } = line as any
       return rest
     })
 
@@ -89,6 +89,53 @@ describe('parseContent', () => {
     )
   })
 
+  it('should identify calling command when names match', () => {
+    const script = dedent`
+      !!echo "first command"
+      !!grep "pattern"
+      !!echo "third command"
+    `
+    const parsed = parseContent(script, 'echo')
+
+    expect(parsed[0]).toMatchObject({
+      type: 'command',
+      commandName: 'echo',
+      isCallingCommand: true,
+    })
+
+    expect(parsed[1]).toMatchObject({
+      type: 'command',
+      commandName: 'grep',
+      isCallingCommand: false,
+    })
+
+    expect(parsed[2]).toMatchObject({
+      type: 'command',
+      commandName: 'echo',
+      isCallingCommand: true,
+    })
+  })
+
+  it('should set isCallingCommand to false when no calling command provided', () => {
+    const script = dedent`
+      !!echo "test"
+      !!grep "pattern"
+    `
+    const parsed = parseContent(script)
+
+    expect(parsed[0]).toMatchObject({
+      type: 'command',
+      commandName: 'echo',
+      isCallingCommand: false,
+    })
+
+    expect(parsed[1]).toMatchObject({
+      type: 'command',
+      commandName: 'grep',
+      isCallingCommand: false,
+    })
+  })
+
   it('should parse and execute complex command', () => {
     const testScriptPath = path.join(
       process.cwd(),
@@ -100,7 +147,7 @@ describe('parseContent', () => {
     const parsed = executeCommands(validateCommands(parseContent(script)))
 
     const parsedWithoutAst = parsed.map(line => {
-      const { ast, ...rest } = line as any
+      const { ast, isCallingCommand, ...rest } = line as any
       return rest
     })
 

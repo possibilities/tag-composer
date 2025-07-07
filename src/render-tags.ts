@@ -19,8 +19,8 @@ function renderLine(line: ParsedLine, level: number, indent: string): string[] {
   output.push(`${renderIndent(level, indent)}<${type}>`)
 
   for (const [key, value] of Object.entries(rest)) {
-    // Skip the ast property
-    if (key === 'ast') {
+    // Skip internal properties
+    if (key === 'ast' || key === 'isCallingCommand') {
       continue
     }
 

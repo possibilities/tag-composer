@@ -909,4 +909,204 @@ describe('CLI Integration', () => {
       `)
     })
   })
+
+  describe('--lift-all-tags-to-root option', () => {
+    it('should lift nested tags to root level', () => {
+      const rolesDir = join(tempDir, 'roles')
+      mkdirSync(rolesDir, { recursive: true })
+
+      const rulesDir = join(rolesDir, 'rules')
+      mkdirSync(rulesDir, { recursive: true })
+
+      writeFileSync(join(rolesDir, 'engineer.md'), 'You are an engineer')
+      writeFileSync(join(rulesDir, 'rule1.md'), 'Rule 1')
+      writeFileSync(join(rulesDir, 'rule2.md'), 'Rule 2')
+
+      const content = dedent`
+        @@roles/engineer.md
+        @@roles/rules/rule1.md
+        @@roles/rules/rule2.md
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --lift-all-tags-to-root "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <document>
+          <roles>
+            You are an engineer
+          </roles>
+          <rules>
+            Rule 1
+          </rules>
+          <rules>
+            Rule 2
+          </rules>
+        </document>
+      
+      `)
+    })
+
+    it('should work with deeply nested structures', () => {
+      const level1Dir = join(tempDir, 'level1')
+      const level2Dir = join(level1Dir, 'level2')
+      const level3Dir = join(level2Dir, 'level3')
+
+      mkdirSync(level3Dir, { recursive: true })
+
+      writeFileSync(join(level1Dir, 'text.md'), 'Level 1 text')
+      writeFileSync(join(level2Dir, 'text.md'), 'Level 2 text')
+      writeFileSync(join(level3Dir, 'text.md'), 'Level 3 text')
+
+      const content = dedent`
+        @@level1/text.md
+        @@level1/level2/text.md
+        @@level1/level2/level3/text.md
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --lift-all-tags-to-root "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <document>
+          <level1>
+            Level 1 text
+          </level1>
+          <level2>
+            Level 2 text
+          </level2>
+          <level3>
+            Level 3 text
+          </level3>
+        </document>
+      
+      `)
+    })
+  })
+
+  describe('--inline-common-tags option', () => {
+    it('should merge multiple tags with the same name', () => {
+      const rulesDir = join(tempDir, 'rules')
+      mkdirSync(rulesDir, { recursive: true })
+
+      writeFileSync(join(rulesDir, 'rule1.md'), 'Rule 1')
+      writeFileSync(join(rulesDir, 'rule2.md'), 'Rule 2')
+      writeFileSync(join(rulesDir, 'rule3.md'), 'Rule 3')
+
+      const content = dedent`
+        @@rules/rule1.md
+        @@rules/rule2.md
+        @@rules/rule3.md
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --inline-common-tags "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <document>
+          <rules>
+            Rule 1
+            Rule 2
+            Rule 3
+          </rules>
+        </document>
+      
+      `)
+    })
+
+    it('should handle nested common tags', () => {
+      const rolesDir = join(tempDir, 'roles')
+      mkdirSync(rolesDir, { recursive: true })
+
+      const rulesDir = join(rolesDir, 'rules')
+      mkdirSync(rulesDir, { recursive: true })
+
+      writeFileSync(join(rolesDir, 'engineer.md'), 'You are an engineer')
+      writeFileSync(join(rulesDir, 'rule1.md'), 'Rule 1')
+      writeFileSync(join(rulesDir, 'rule2.md'), 'Rule 2')
+
+      const content = dedent`
+        @@roles/engineer.md
+        @@roles/rules/rule1.md
+        @@roles/rules/rule2.md
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --inline-common-tags "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <document>
+          <roles>
+            You are an engineer
+            <rules>
+              Rule 1
+              Rule 2
+            </rules>
+          </roles>
+        </document>
+      
+      `)
+    })
+  })
+
+  describe('Combined transformation options', () => {
+    it('should apply both transformations when both options are used', () => {
+      const rolesDir = join(tempDir, 'roles')
+      mkdirSync(rolesDir, { recursive: true })
+
+      const rulesDir = join(rolesDir, 'rules')
+      mkdirSync(rulesDir, { recursive: true })
+
+      writeFileSync(join(rolesDir, 'engineer.md'), 'You are an engineer')
+      writeFileSync(join(rulesDir, 'rule1.md'), 'Rule 1')
+      writeFileSync(join(rulesDir, 'rule2.md'), 'Rule 2')
+
+      const content = dedent`
+        @@roles/engineer.md
+        @@roles/rules/rule1.md
+        @@roles/rules/rule2.md
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --lift-all-tags-to-root --inline-common-tags "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <document>
+          <roles>
+            You are an engineer
+          </roles>
+          <rules>
+            Rule 1
+            Rule 2
+          </rules>
+        </document>
+      
+      `)
+    })
+  })
 })

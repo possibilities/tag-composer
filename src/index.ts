@@ -29,6 +29,8 @@ async function main() {
       'strategy for converting paths to tags (choices: all, head, tail, init, last, rest, default: all)',
       'all',
     )
+    .option('--lift-all-tags-to-root', 'lift all nested tags to the root level')
+    .option('--inline-common-tags', 'merge multiple tags with the same name')
     .allowExcessArguments(false)
     .action(
       (
@@ -38,6 +40,8 @@ async function main() {
           rootTagName?: string
           rootTag?: boolean
           convertPathToTagStrategy?: string
+          liftAllTagsToRoot?: boolean
+          inlineCommonTags?: boolean
         },
       ) => {
         if (file.startsWith('~/')) {
@@ -98,6 +102,8 @@ async function main() {
           rootTag: options.rootTagName,
           noRootTag: shouldOmitRootTag,
           pathToTagStrategy: pathStrategy,
+          liftAllTagsToRoot: options.liftAllTagsToRoot,
+          inlineCommonTags: options.inlineCommonTags,
         })
         process.stdout.write(output)
       },

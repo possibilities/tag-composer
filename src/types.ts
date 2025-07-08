@@ -42,4 +42,6 @@ export interface RenderOptions {
   rootTag?: string
   noRootTag?: boolean
   pathToTagStrategy?: PathToTagStrategy
+  liftAllTagsToRoot?: boolean
+  inlineCommonTags?: boolean
 }

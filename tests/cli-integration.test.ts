@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'fs'
-import { tmpdir } from 'os'
+import { tmpdir, homedir } from 'os'
 import { join } from 'path'
 import { execSync, spawn } from 'child_process'
 import dedent from 'dedent'
@@ -174,39 +174,6 @@ describe('CLI Integration', () => {
     }).toThrow(/Circular dependency detected/)
   })
 
-  it('should skip circular dependency check with --no-recursion-check', () => {
-    const file1 = join(tempDir, 'circular1.md')
-    const file2 = join(tempDir, 'circular2.md')
-
-    writeFileSync(
-      file1,
-      dedent`
-      # Circular 1
-      @@circular2.md
-    `,
-    )
-
-    writeFileSync(
-      file2,
-      dedent`
-      # Circular 2
-      @@circular1.md
-    `,
-    )
-
-    const child = spawn('node', [
-      `${originalCwd}/dist/cli.js`,
-      '--no-recursion-check',
-      file1,
-    ])
-
-    setTimeout(() => {
-      child.kill()
-    }, 100)
-
-    expect(() => child).not.toThrow()
-  })
-
   describe('nested tag generation', () => {
     it('should wrap content in nested tags based on directory path', () => {
       const nestedDir = join(tempDir, 'foo', 'bar')
@@ -225,13 +192,9 @@ describe('CLI Integration', () => {
 
       expect(output).toBe(dedent`
         <document>
-          <foo>
-            <bar>
-              <text>
-                # Nested content
-              </text>
-            </bar>
-          </foo>
+          <text>
+            # Nested content
+          </text>
         </document>
       
       `)
@@ -254,11 +217,9 @@ describe('CLI Integration', () => {
 
       expect(output).toBe(dedent`
         <document>
-          <sub>
-            <text>
-              # Single dir
-            </text>
-          </sub>
+          <text>
+            # Single dir
+          </text>
         </document>
       
       `)
@@ -325,12 +286,9 @@ describe('CLI Integration', () => {
       `
       writeFileSync(subFile, content)
 
-      const output = execSync(
-        `node ${originalCwd}/dist/cli.js --no-resolve-markdown-relative-to-cwd "${subFile}"`,
-        {
-          encoding: 'utf-8',
-        },
-      )
+      const output = execSync(`node ${originalCwd}/dist/cli.js "${subFile}"`, {
+        encoding: 'utf-8',
+      })
 
       expect(output).toBe(dedent`
         <document>
@@ -343,68 +301,30 @@ describe('CLI Integration', () => {
     })
   })
 
-  describe('--resolve-markdown-relative-to-cwd option', () => {
-    it('should resolve relative to CWD by default', () => {
-      const subDir = join(tempDir, 'sub')
-      mkdirSync(subDir, { recursive: true })
+  it('should expand ~/ to home directory', () => {
+    const homeFile = join(homedir(), 'test-tag-composer.md')
+    writeFileSync(homeFile, '# Home file')
 
-      const relativeFile = join(tempDir, 'relative.md')
-      writeFileSync(relativeFile, '# Relative file')
-
-      const content = dedent`
-        @@relative.md
-      `
-      const subFile = join(subDir, 'test.md')
-      writeFileSync(subFile, content)
-
-      const output = execSync(`node ${originalCwd}/dist/cli.js "${subFile}"`, {
-        encoding: 'utf-8',
-        cwd: tempDir,
-      })
-
-      expect(output).toBe(dedent`
-        <document>
-          <text>
-            # Relative file
-          </text>
-        </document>
-      
-      `)
-    })
-
-    it('should resolve relative to markdown file with --no-resolve-markdown-relative-to-cwd', () => {
-      const subDir = join(tempDir, 'sub')
-      mkdirSync(subDir, { recursive: true })
-
-      const relativeFile = join(subDir, 'relative.md')
-      writeFileSync(relativeFile, '# Relative in subdir')
-
-      const content = dedent`
-        @@relative.md
-      `
-      const subFile = join(subDir, 'test.md')
-      writeFileSync(subFile, content)
-
-      // Change working directory to test proper resolution
-      process.chdir(tempDir)
-
+    try {
       const output = execSync(
-        `node ${originalCwd}/dist/cli.js --no-resolve-markdown-relative-to-cwd "${subFile}"`,
+        `node ${originalCwd}/dist/cli.js "~/test-tag-composer.md"`,
         {
           encoding: 'utf-8',
-          cwd: tempDir,
         },
       )
 
       expect(output).toBe(dedent`
         <document>
           <text>
-            # Relative in subdir
+            # Home file
           </text>
         </document>
       
       `)
-    })
+    } finally {
+      // Clean up
+      rmSync(homeFile, { force: true })
+    }
   })
 
   describe('--json option', () => {

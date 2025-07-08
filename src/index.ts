@@ -1,7 +1,8 @@
 import { Command } from 'commander'
 import packageJson from '../package.json' assert { type: 'json' }
 import { existsSync, readFileSync } from 'fs'
-import { extname } from 'path'
+import { extname, resolve } from 'path'
+import { homedir } from 'os'
 import { runPipeline, runPipelineJson } from './pipeline.js'
 import { detectCircularDependencies } from './detect-circular-dependencies.js'
 
@@ -14,29 +15,17 @@ async function main() {
     .version(packageJson.version)
     .argument('<file>', 'markdown file to process')
     .option('--json', 'output as JSON instead of formatted tags')
-    .option(
-      '--recursion-check',
-      'check for circular dependencies (default: true)',
-    )
-    .option('--no-recursion-check', 'skip circular dependency check')
-    .option(
-      '--resolve-markdown-relative-to-cwd',
-      'resolve markdown paths relative to current working directory (default: true)',
-    )
-    .option(
-      '--no-resolve-markdown-relative-to-cwd',
-      'resolve markdown paths relative to the markdown file',
-    )
     .allowExcessArguments(false)
     .action(
       (
         file: string,
         options: {
           json?: boolean
-          recursionCheck?: boolean
-          resolveMarkdownRelativeToCwd?: boolean
         },
       ) => {
+        if (file.startsWith('~/')) {
+          file = resolve(homedir(), file.slice(2))
+        }
         if (!existsSync(file)) {
           throw new Error(`Error: File '${file}' not found`)
         }
@@ -48,18 +37,14 @@ async function main() {
         }
 
         const content = readFileSync(file, 'utf-8')
-        const resolveRelativeToCwd =
-          options.resolveMarkdownRelativeToCwd !== false
 
-        if (options.recursionCheck !== false) {
-          detectCircularDependencies(file)
-        }
+        detectCircularDependencies(file)
 
         if (options.json) {
-          const result = runPipelineJson(content, file, resolveRelativeToCwd)
+          const result = runPipelineJson(content, file)
           process.stdout.write(JSON.stringify(result, null, 2))
         } else {
-          const output = runPipeline(content, file, resolveRelativeToCwd)
+          const output = runPipeline(content, file)
           process.stdout.write(output)
         }
       },

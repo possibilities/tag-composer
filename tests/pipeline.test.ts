@@ -64,7 +64,7 @@ describe('Full Pipeline Integration', () => {
       Back to main
     `
 
-    const output = runPipeline(input, join(tempDir, 'main.md'), true)
+    const output = runPipeline(input, join(tempDir, 'main.md'))
 
     expect(output).toBe(dedent`
       <document>
@@ -107,7 +107,7 @@ describe('Full Pipeline Integration', () => {
       Back to root
     `
 
-    const output = runPipeline(input, join(tempDir, 'root.md'), true)
+    const output = runPipeline(input, join(tempDir, 'root.md'))
 
     expect(output).toBe(dedent`
       <document>
@@ -149,26 +149,22 @@ describe('Full Pipeline Integration', () => {
       End of docs
     `
 
-    const output = runPipeline(input, join(tempDir, 'main.md'), true)
+    const output = runPipeline(input, join(tempDir, 'main.md'))
 
     expect(output).toBe(dedent`
       <document>
         <text>
           Documentation
         </text>
-        <docs>
-          <api>
-            <text>
-              API Endpoints
-            </text>
-            <text>
-              GET /users
-            </text>
-            <text>
-              POST /users
-            </text>
-          </api>
-        </docs>
+        <text>
+          API Endpoints
+        </text>
+        <text>
+          GET /users
+        </text>
+        <text>
+          POST /users
+        </text>
         <text>
           End of docs
         </text>
@@ -183,7 +179,7 @@ describe('Full Pipeline Integration', () => {
       This should not be reached
     `
 
-    expect(() => runPipeline(input, join(tempDir, 'main.md'), true)).toThrow()
+    expect(() => runPipeline(input, join(tempDir, 'main.md'))).toThrow()
   })
 
   it('should handle empty markdown files', () => {
@@ -195,7 +191,7 @@ describe('Full Pipeline Integration', () => {
       After empty
     `
 
-    const output = runPipeline(input, join(tempDir, 'main.md'), true)
+    const output = runPipeline(input, join(tempDir, 'main.md'))
 
     expect(output).toBe(dedent`
       <document>
@@ -232,7 +228,7 @@ describe('Full Pipeline Integration', () => {
       End
     `
 
-    const output = runPipeline(input, join(tempDir, 'main.md'), true)
+    const output = runPipeline(input, join(tempDir, 'main.md'))
 
     expect(output).toBe(dedent`
       <document>

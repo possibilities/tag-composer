@@ -3,30 +3,17 @@ import { processMarkdownReferences } from './process-markdown-references.js'
 import { renderTags } from './render-tags.js'
 import { ParsedLine } from './types.js'
 
-export function runPipeline(
-  input: string,
-  currentFilePath?: string,
-  resolveRelativeToCwd?: boolean,
-): string {
+export function runPipeline(input: string, currentFilePath?: string): string {
   const parsed = parseContent(input)
-  const processed = processMarkdownReferences(
-    parsed,
-    currentFilePath,
-    resolveRelativeToCwd,
-  )
+  const processed = processMarkdownReferences(parsed, currentFilePath)
   return renderTags(processed)
 }
 
 export function runPipelineJson(
   input: string,
   currentFilePath?: string,
-  resolveRelativeToCwd?: boolean,
 ): ParsedLine[] {
   const parsed = parseContent(input)
-  const processed = processMarkdownReferences(
-    parsed,
-    currentFilePath,
-    resolveRelativeToCwd,
-  )
+  const processed = processMarkdownReferences(parsed, currentFilePath)
   return processed
 }

@@ -156,15 +156,19 @@ describe('Full Pipeline Integration', () => {
         <text>
           Documentation
         </text>
-        <text>
-          API Endpoints
-        </text>
-        <text>
-          GET /users
-        </text>
-        <text>
-          POST /users
-        </text>
+        <docs>
+          <api>
+            <text>
+              API Endpoints
+            </text>
+            <text>
+              GET /users
+            </text>
+            <text>
+              POST /users
+            </text>
+          </api>
+        </docs>
         <text>
           End of docs
         </text>

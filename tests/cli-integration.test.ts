@@ -192,9 +192,13 @@ describe('CLI Integration', () => {
 
       expect(output).toBe(dedent`
         <document>
-          <text>
-            # Nested content
-          </text>
+          <foo>
+            <bar>
+              <text>
+                # Nested content
+              </text>
+            </bar>
+          </foo>
         </document>
       
       `)
@@ -217,9 +221,11 @@ describe('CLI Integration', () => {
 
       expect(output).toBe(dedent`
         <document>
-          <text>
-            # Single dir
-          </text>
+          <sub>
+            <text>
+              # Single dir
+            </text>
+          </sub>
         </document>
       
       `)
@@ -273,6 +279,29 @@ describe('CLI Integration', () => {
       `)
     })
 
+    it('should handle current directory references', () => {
+      const currentFile = join(tempDir, 'current.md')
+      writeFileSync(currentFile, '# Current dir file')
+
+      const content = dedent`
+        @@./current.md
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(`node ${originalCwd}/dist/cli.js "${testFile}"`, {
+        encoding: 'utf-8',
+      })
+
+      expect(output).toBe(dedent`
+        <document>
+          <text>
+            # Current dir file
+          </text>
+        </document>
+      
+      `)
+    })
+
     it('should handle parent directory references', () => {
       const parentFile = join(tempDir, 'parent.md')
       writeFileSync(parentFile, '# Parent file')
@@ -295,6 +324,37 @@ describe('CLI Integration', () => {
           <text>
             # Parent file
           </text>
+        </document>
+      
+      `)
+    })
+
+    it('should handle parent directory references with nested paths', () => {
+      const queryDir = join(tempDir, 'query')
+      mkdirSync(queryDir, { recursive: true })
+      const promptFile = join(queryDir, 'prompt.md')
+      writeFileSync(promptFile, '# Query prompt')
+
+      const deepDir = join(tempDir, 'deep', 'nested')
+      mkdirSync(deepDir, { recursive: true })
+      const deepFile = join(deepDir, 'file.md')
+
+      const content = dedent`
+        @@../../query/prompt.md
+      `
+      writeFileSync(deepFile, content)
+
+      const output = execSync(`node ${originalCwd}/dist/cli.js "${deepFile}"`, {
+        encoding: 'utf-8',
+      })
+
+      expect(output).toBe(dedent`
+        <document>
+          <query>
+            <text>
+              # Query prompt
+            </text>
+          </query>
         </document>
       
       `)

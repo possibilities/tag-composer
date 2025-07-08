@@ -1,11 +1,47 @@
-import { dirname, resolve } from 'path'
+import { dirname, normalize, resolve } from 'path'
 import { spawnSync } from 'child_process'
-import { ParsedLine, MarkdownReference, XmlNode } from './types.js'
+import { ParsedLine, MarkdownReference, XmlNode, XmlElement } from './types.js'
 
 function isMarkdownReference(
   item: ParsedLine | MarkdownReference,
 ): item is MarkdownReference {
   return 'type' in item && item.type === 'markdown-reference'
+}
+
+function extractDirectorySegments(filePath: string): string[] {
+  const normalizedPath = normalize(filePath)
+  const directoryPath = dirname(normalizedPath)
+
+  if (directoryPath === '.' || directoryPath === '') {
+    return []
+  }
+
+  const pathParts = directoryPath.split('/')
+  const validDirectoryNames = pathParts.filter(segment => {
+    return segment !== '' && segment !== '.' && !/^\.+$/.test(segment)
+  })
+
+  return validDirectoryNames
+}
+
+function wrapInNestedTags(
+  segments: string[],
+  content: ParsedLine[],
+): ParsedLine[] {
+  if (segments.length === 0) {
+    return content
+  }
+
+  const innerSegment = segments[segments.length - 1]
+  const outerSegments = segments.slice(0, -1)
+
+  const wrappedElement: XmlElement = {
+    type: 'element',
+    name: innerSegment,
+    elements: content,
+  }
+
+  return wrapInNestedTags(outerSegments, [wrappedElement])
 }
 
 function resolveMarkdownPath(
@@ -45,7 +81,14 @@ function processMarkdownFile(
 
   try {
     const parsedJson: ParsedLine[] = JSON.parse(result.stdout)
-    return parsedJson
+
+    let directorySegments: string[] = []
+
+    if (!reference.path.startsWith('/')) {
+      directorySegments = extractDirectorySegments(reference.path)
+    }
+
+    return wrapInNestedTags(directorySegments, parsedJson)
   } catch (error) {
     throw new Error(
       `Failed to parse output from ${reference.path}: ${error instanceof Error ? error.message : 'Unknown error'}`,

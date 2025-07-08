@@ -13,7 +13,7 @@ async function main() {
     .name('tag-composer')
     .description('Tag Composer CLI')
     .version(packageJson.version)
-    .argument('<file>', 'markdown file to process')
+    .argument('<file>', 'markdown file')
     .option('--json', 'output as JSON instead of formatted tags')
     .allowExcessArguments(false)
     .action(

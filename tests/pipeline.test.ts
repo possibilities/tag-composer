@@ -36,15 +36,9 @@ describe('Full Pipeline Integration', () => {
 
     expect(tags).toBe(dedent`
       <document>
-        <text>
-          This is a simple script
-        </text>
-        <text>
-          Just plain text
-        </text>
-        <text>
-          All done!
-        </text>
+        This is a simple script
+        Just plain text
+        All done!
       </document>
     `)
   })
@@ -68,18 +62,10 @@ describe('Full Pipeline Integration', () => {
 
     expect(output).toBe(dedent`
       <document>
-        <text>
-          Main content
-        </text>
-        <text>
-          This is included content
-        </text>
-        <text>
-          From another file
-        </text>
-        <text>
-          Back to main
-        </text>
+        Main content
+        This is included content
+        From another file
+        Back to main
       </document>
     `)
   })
@@ -111,21 +97,11 @@ describe('Full Pipeline Integration', () => {
 
     expect(output).toBe(dedent`
       <document>
-        <text>
-          Root content
-        </text>
-        <text>
-          Level 1 content
-        </text>
-        <text>
-          Level 2 content
-        </text>
-        <text>
-          Back to level 1
-        </text>
-        <text>
-          Back to root
-        </text>
+        Root content
+        Level 1 content
+        Level 2 content
+        Back to level 1
+        Back to root
       </document>
     `)
   })
@@ -153,25 +129,15 @@ describe('Full Pipeline Integration', () => {
 
     expect(output).toBe(dedent`
       <document>
-        <text>
-          Documentation
-        </text>
+        Documentation
         <docs>
           <api>
-            <text>
-              API Endpoints
-            </text>
-            <text>
-              GET /users
-            </text>
-            <text>
-              POST /users
-            </text>
+            API Endpoints
+            GET /users
+            POST /users
           </api>
         </docs>
-        <text>
-          End of docs
-        </text>
+        End of docs
       </document>
     `)
   })
@@ -199,12 +165,8 @@ describe('Full Pipeline Integration', () => {
 
     expect(output).toBe(dedent`
       <document>
-        <text>
-          Before empty
-        </text>
-        <text>
-          After empty
-        </text>
+        Before empty
+        After empty
       </document>
     `)
   })
@@ -236,21 +198,11 @@ describe('Full Pipeline Integration', () => {
 
     expect(output).toBe(dedent`
       <document>
-        <text>
-          Start
-        </text>
-        <text>
-          First file content
-        </text>
-        <text>
-          Middle
-        </text>
-        <text>
-          Second file content
-        </text>
-        <text>
-          End
-        </text>
+        Start
+        First file content
+        Middle
+        Second file content
+        End
       </document>
     `)
   })

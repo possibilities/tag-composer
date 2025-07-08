@@ -11,14 +11,12 @@ describe('parseContent', () => {
     const parsed = parseContent(script)
     expect(parsed).toEqual([
       {
-        type: 'element',
-        name: 'text',
-        elements: [{ type: 'text', text: 'hello world' }],
+        type: 'text',
+        text: 'hello world',
       },
       {
-        type: 'element',
-        name: 'text',
-        elements: [{ type: 'text', text: 'goodbye world' }],
+        type: 'text',
+        text: 'goodbye world',
       },
     ])
   })
@@ -33,18 +31,16 @@ describe('parseContent', () => {
 
     expect(parsed).toEqual([
       {
-        type: 'element',
-        name: 'text',
-        elements: [{ type: 'text', text: 'hello world' }],
+        type: 'text',
+        text: 'hello world',
       },
       {
         type: 'markdown-reference',
         path: 'test.md',
       },
       {
-        type: 'element',
-        name: 'text',
-        elements: [{ type: 'text', text: 'goodbye world' }],
+        type: 'text',
+        text: 'goodbye world',
       },
     ])
   })
@@ -141,11 +137,8 @@ describe('parseContent', () => {
 
     expect(parsed).toEqual([
       {
-        type: 'element',
-        name: 'text',
-        elements: [
-          { type: 'text', text: 'This line contains @@test.md in the middle' },
-        ],
+        type: 'text',
+        text: 'This line contains @@test.md in the middle',
       },
       {
         type: 'markdown-reference',

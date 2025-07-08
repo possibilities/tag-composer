@@ -1,4 +1,4 @@
-import { MarkdownReference, ParsedLine, XmlElement } from './types.js'
+import { MarkdownReference, ParsedLine } from './types.js'
 
 function parseMarkdownReference(
   line: string,
@@ -36,9 +36,8 @@ export function parseContent(
         return parseMarkdownReference(trimmedLine, index + 1)
       }
       return {
-        type: 'element',
-        name: 'text',
-        elements: [{ type: 'text', text: line }],
-      } as XmlElement
+        type: 'text',
+        text: line,
+      }
     })
 }

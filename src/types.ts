@@ -27,12 +27,7 @@ export interface MarkdownReference {
   path: string
 }
 
-export interface TextLine extends XmlElement {
-  name: 'text'
-  elements: XmlElement[]
-}
-
-export type ParsedLine = XmlElement
+export type ParsedLine = XmlElement | XmlText
 
 export interface RenderOptions {
   indent?: string

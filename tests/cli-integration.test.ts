@@ -38,15 +38,9 @@ describe('CLI Integration', () => {
 
     expect(output).toBe(dedent`
       <document>
-        <text>
-          # Test Document
-        </text>
-        <text>
-          This is plain text
-        </text>
-        <text>
-          All done!
-        </text>
+        # Test Document
+        This is plain text
+        All done!
       </document>
     
     `)
@@ -78,15 +72,9 @@ describe('CLI Integration', () => {
 
     expect(output).toBe(dedent`
       <document>
-        <text>
-          # Just Text
-        </text>
-        <text>
-          No references here
-        </text>
-        <text>
-          Only documentation
-        </text>
+        # Just Text
+        No references here
+        Only documentation
       </document>
     
     `)
@@ -120,9 +108,7 @@ describe('CLI Integration', () => {
 
     expect(output).toBe(dedent`
       <document>
-        <text>
-          # Valid file
-        </text>
+        # Valid file
       </document>
     
     `)
@@ -194,9 +180,7 @@ describe('CLI Integration', () => {
         <document>
           <foo>
             <bar>
-              <text>
-                # Nested content
-              </text>
+              # Nested content
             </bar>
           </foo>
         </document>
@@ -222,9 +206,7 @@ describe('CLI Integration', () => {
       expect(output).toBe(dedent`
         <document>
           <sub>
-            <text>
-              # Single dir
-            </text>
+            # Single dir
           </sub>
         </document>
       
@@ -246,9 +228,7 @@ describe('CLI Integration', () => {
 
       expect(output).toBe(dedent`
         <document>
-          <text>
-            # Same dir
-          </text>
+          # Same dir
         </document>
       
       `)
@@ -271,9 +251,7 @@ describe('CLI Integration', () => {
 
       expect(output).toBe(dedent`
         <document>
-          <text>
-            # Absolute path
-          </text>
+          # Absolute path
         </document>
       
       `)
@@ -294,9 +272,7 @@ describe('CLI Integration', () => {
 
       expect(output).toBe(dedent`
         <document>
-          <text>
-            # Current dir file
-          </text>
+          # Current dir file
         </document>
       
       `)
@@ -321,9 +297,7 @@ describe('CLI Integration', () => {
 
       expect(output).toBe(dedent`
         <document>
-          <text>
-            # Parent file
-          </text>
+          # Parent file
         </document>
       
       `)
@@ -351,9 +325,7 @@ describe('CLI Integration', () => {
       expect(output).toBe(dedent`
         <document>
           <query>
-            <text>
-              # Query prompt
-            </text>
+            # Query prompt
           </query>
         </document>
       
@@ -375,9 +347,7 @@ describe('CLI Integration', () => {
 
       expect(output).toBe(dedent`
         <document>
-          <text>
-            # Home file
-          </text>
+          # Home file
         </document>
       
       `)
@@ -405,14 +375,12 @@ describe('CLI Integration', () => {
       const json = JSON.parse(output)
       expect(json).toEqual([
         {
-          type: 'element',
-          name: 'text',
-          elements: [{ type: 'text', text: '# Test' }],
+          type: 'text',
+          text: '# Test',
         },
         {
-          type: 'element',
-          name: 'text',
-          elements: [{ type: 'text', text: 'Some text' }],
+          type: 'text',
+          text: 'Some text',
         },
       ])
     })
@@ -437,14 +405,12 @@ describe('CLI Integration', () => {
       const json = JSON.parse(output)
       expect(json).toEqual([
         {
-          type: 'element',
-          name: 'text',
-          elements: [{ type: 'text', text: 'Main' }],
+          type: 'text',
+          text: 'Main',
         },
         {
-          type: 'element',
-          name: 'text',
-          elements: [{ type: 'text', text: '# Included' }],
+          type: 'text',
+          text: '# Included',
         },
       ])
     })

@@ -1,9 +1,6 @@
 import dedent from 'dedent'
 import { describe, it, expect } from 'vitest'
 import { parseContent } from '../src/parse-content'
-import { parseCommands } from '../src/parse-commands'
-import { executeCommands } from '../src/execute-commands'
-import path from 'path'
 
 describe('parseContent', () => {
   it('should parse text', () => {
@@ -26,10 +23,10 @@ describe('parseContent', () => {
     ])
   })
 
-  it('should parse unparsed commands starting with !!', () => {
+  it('should parse markdown references starting with @@', () => {
     const script = dedent`
       hello world
-      !!echo "test"
+      @@test.md
       goodbye world
     `
     const parsed = parseContent(script)
@@ -41,8 +38,8 @@ describe('parseContent', () => {
         elements: [{ type: 'text', text: 'hello world' }],
       },
       {
-        type: 'command',
-        input: 'echo "test"',
+        type: 'markdown-reference',
+        path: 'test.md',
       },
       {
         type: 'element',
@@ -52,244 +49,108 @@ describe('parseContent', () => {
     ])
   })
 
-  it('should parse and execute commands through the full pipeline', async () => {
+  it('should parse markdown references with paths', () => {
     const script = dedent`
-      hello world
-      !!echo "test"
-      goodbye world
+      @@foo/bar.md
+      @@../other.md
+      @@/absolute/path.md
     `
-    const parsed = executeCommands(parseCommands(parseContent(script)))
+    const parsed = parseContent(script)
 
     expect(parsed).toEqual([
       {
-        type: 'element',
-        name: 'text',
-        elements: [{ type: 'text', text: 'hello world' }],
+        type: 'markdown-reference',
+        path: 'foo/bar.md',
       },
       {
-        type: 'element',
-        name: 'command',
-        attributes: { name: 'echo' },
-        commandName: 'echo',
-        ast: expect.any(Object),
-        elements: expect.arrayContaining([
-          {
-            type: 'element',
-            name: 'input',
-            elements: [{ type: 'text', text: 'echo "test"' }],
-          },
-          {
-            type: 'element',
-            name: 'exit',
-            attributes: {
-              status: 'success',
-              code: '0',
-            },
-          },
-          {
-            type: 'element',
-            name: 'stdout',
-            elements: [{ type: 'text', text: 'test' }],
-          },
-          {
-            type: 'element',
-            name: 'stderr',
-          },
-        ]),
+        type: 'markdown-reference',
+        path: '../other.md',
       },
       {
-        type: 'element',
-        name: 'text',
-        elements: [{ type: 'text', text: 'goodbye world' }],
+        type: 'markdown-reference',
+        path: '/absolute/path.md',
       },
     ])
   })
 
-  it('should throw error for command with no content after !!', () => {
+  it('should handle markdown references with extra whitespace', () => {
     const script = dedent`
-      !!
+      @@  test.md
+      @@test2.md  
+      @@  test3.md  
+    `
+    const parsed = parseContent(script)
+
+    expect(parsed).toEqual([
+      {
+        type: 'markdown-reference',
+        path: 'test.md',
+      },
+      {
+        type: 'markdown-reference',
+        path: 'test2.md',
+      },
+      {
+        type: 'markdown-reference',
+        path: 'test3.md',
+      },
+    ])
+  })
+
+  it('should throw error for markdown reference with no path after @@', () => {
+    const script = dedent`
+      @@
       hello
     `
     expect(() => parseContent(script)).toThrow(
-      'Parse error at line 1: Command cannot be empty',
+      'Parse error at line 1: Markdown reference path cannot be empty',
     )
   })
 
-  it('should throw error for command with only whitespace', () => {
+  it('should throw error for markdown reference that does not end with .md', () => {
     const script = dedent`
-      hello
-      !!
-      world
+      @@test.txt
     `
     expect(() => parseContent(script)).toThrow(
-      'Parse error at line 2: Command cannot be empty',
+      'Parse error at line 1: Markdown reference must end with .md',
     )
   })
 
-  it('should parse commands with invalid syntax without throwing', () => {
-    const script = dedent`
-      hello
-      !!echo "unclosed quote
-      world
+  it('should throw error for lines starting with @@ but not ending with .md', () => {
+    const script1 = dedent`
+      @@this is not a markdown reference
     `
+    expect(() => parseContent(script1)).toThrow(
+      'Parse error at line 1: Markdown reference must end with .md',
+    )
 
+    const script2 = dedent`
+      @@ neither is this
+    `
+    expect(() => parseContent(script2)).toThrow(
+      'Parse error at line 1: Markdown reference must end with .md',
+    )
+  })
+
+  it('should only detect @@ at the start of a trimmed line', () => {
+    const script = dedent`
+      This line contains @@test.md in the middle
+        @@indented.md
+    `
     const parsed = parseContent(script)
+
     expect(parsed).toEqual([
       {
         type: 'element',
         name: 'text',
-        elements: [{ type: 'text', text: 'hello' }],
+        elements: [
+          { type: 'text', text: 'This line contains @@test.md in the middle' },
+        ],
       },
       {
-        type: 'command',
-        input: 'echo "unclosed quote',
-      },
-      {
-        type: 'element',
-        name: 'text',
-        elements: [{ type: 'text', text: 'world' }],
+        type: 'markdown-reference',
+        path: 'indented.md',
       },
     ])
-
-    expect(() => parseCommands(parsed)).toThrow(/Invalid bash syntax/)
-  })
-
-  it('should parse unparsed commands that will be identified as calling commands later', () => {
-    const script = dedent`
-      !!echo "first command"
-      !!grep "pattern"
-      !!ls -la
-    `
-    const parsed = parseContent(script)
-
-    expect(parsed).toEqual([
-      {
-        type: 'command',
-        input: 'echo "first command"',
-      },
-      {
-        type: 'command',
-        input: 'grep "pattern"',
-      },
-      {
-        type: 'command',
-        input: 'ls -la',
-      },
-    ])
-
-    const parsedCommands = parseCommands(parsed, 'tag-composer')
-
-    expect(parsedCommands[0]).toMatchObject({
-      type: 'element',
-      name: 'command',
-      attributes: { name: 'echo' },
-      commandName: 'echo',
-    })
-
-    expect(parsedCommands[1]).toMatchObject({
-      type: 'element',
-      name: 'command',
-      attributes: { name: 'grep' },
-      commandName: 'grep',
-    })
-
-    expect(parsedCommands[2]).toMatchObject({
-      type: 'element',
-      name: 'command',
-      attributes: { name: 'ls' },
-      commandName: 'ls',
-    })
-  })
-
-  it('should parse commands that default to not being calling commands', () => {
-    const script = dedent`
-      !!echo "test"
-      !!grep "pattern"
-    `
-    const parsed = parseContent(script)
-    const parsedCommands = parseCommands(parsed)
-
-    expect(parsedCommands[0]).toMatchObject({
-      type: 'element',
-      name: 'command',
-      attributes: { name: 'echo' },
-      commandName: 'echo',
-    })
-
-    expect(parsedCommands[1]).toMatchObject({
-      type: 'element',
-      name: 'command',
-      attributes: { name: 'grep' },
-      commandName: 'grep',
-    })
-  })
-
-  it('should parse and execute complex command', async () => {
-    const testScriptPath = path.join(
-      process.cwd(),
-      'tests/helpers/command-for-integration-tests.sh',
-    )
-    const script = dedent`
-      !!${testScriptPath} --exit-code 42 --stdout "hello world" --stderr "error message"
-    `
-    const parsed = executeCommands(parseCommands(parseContent(script)))
-
-    expect(parsed).toEqual([
-      {
-        type: 'element',
-        name: 'command',
-        attributes: { name: testScriptPath },
-        commandName: testScriptPath,
-        ast: expect.any(Object),
-        elements: expect.arrayContaining([
-          {
-            type: 'element',
-            name: 'input',
-            elements: [
-              {
-                type: 'text',
-                text: `${testScriptPath} --exit-code 42 --stdout "hello world" --stderr "error message"`,
-              },
-            ],
-          },
-          {
-            type: 'element',
-            name: 'exit',
-            attributes: {
-              status: 'failure',
-              code: '42',
-            },
-          },
-          {
-            type: 'element',
-            name: 'stdout',
-            elements: [{ type: 'text', text: 'hello world' }],
-          },
-          {
-            type: 'element',
-            name: 'stderr',
-            elements: [{ type: 'text', text: 'error message' }],
-          },
-        ]),
-      },
-    ])
-  })
-
-  it('should throw error for compound commands in parse phase', async () => {
-    const script = dedent`
-      !!echo hello | grep hello
-    `
-    const parsed = parseContent(script)
-
-    expect(parsed).toEqual([
-      {
-        type: 'command',
-        input: 'echo hello | grep hello',
-      },
-    ])
-
-    expect(() => parseCommands(parsed)).toThrow(
-      'Only simple commands are allowed',
-    )
   })
 })

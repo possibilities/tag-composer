@@ -27,8 +27,7 @@ describe('CLI Integration', () => {
   it('should process a markdown file through the pipeline', () => {
     const content = dedent`
       # Test Document
-      !!echo "Hello from CLI"
-      !!pwd
+      This is plain text
       All done!
     `
     writeFileSync(testFile, content)
@@ -37,47 +36,14 @@ describe('CLI Integration', () => {
       encoding: 'utf-8',
     })
 
-    // Extract the pwd output to handle dynamic content
-    const lines = output.split('\n')
-    let pwdOutput = ''
-    let foundPwdCommand = false
-
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].includes('<command name="pwd">')) {
-        foundPwdCommand = true
-      }
-      if (foundPwdCommand && lines[i].includes('<stdout>')) {
-        // Next line should contain the pwd output
-        pwdOutput = lines[i + 1].trim()
-        break
-      }
-    }
-
     expect(output).toBe(dedent`
       <document>
         <text>
           # Test Document
         </text>
-        <command name="echo">
-          <input>
-            echo "Hello from CLI"
-          </input>
-          <exit status="success" code="0"/>
-          <stdout>
-            Hello from CLI
-          </stdout>
-          <stderr/>
-        </command>
-        <command name="pwd">
-          <input>
-            pwd
-          </input>
-          <exit status="success" code="0"/>
-          <stdout>
-            ${pwdOutput}
-          </stdout>
-          <stderr/>
-        </command>
+        <text>
+          This is plain text
+        </text>
         <text>
           All done!
         </text>
@@ -101,7 +67,7 @@ describe('CLI Integration', () => {
   it('should handle markdown files with only text', () => {
     const content = dedent`
       # Just Text
-      No commands here
+      No references here
       Only documentation
     `
     writeFileSync(testFile, content)
@@ -116,7 +82,7 @@ describe('CLI Integration', () => {
           # Just Text
         </text>
         <text>
-          No commands here
+          No references here
         </text>
         <text>
           Only documentation
@@ -126,9 +92,9 @@ describe('CLI Integration', () => {
     `)
   })
 
-  it('should handle tag-composer commands with invalid files', () => {
+  it('should handle markdown references with invalid files', () => {
     const content = dedent`
-      !!tag-composer nonexistent.md
+      @@nonexistent.md
     `
     writeFileSync(testFile, content)
 
@@ -139,12 +105,12 @@ describe('CLI Integration', () => {
     }).toThrow()
   })
 
-  it('should replace tag-composer commands with included file content', () => {
+  it('should replace markdown references with included file content', () => {
     const validFile = join(tempDir, 'valid.md')
     writeFileSync(validFile, '# Valid file')
 
     const content = dedent`
-      !!tag-composer "valid.md"
+      @@valid.md
     `
     writeFileSync(testFile, content)
 
@@ -152,7 +118,6 @@ describe('CLI Integration', () => {
       encoding: 'utf-8',
     })
 
-    // The tag-composer command should be replaced with the content of valid.md
     expect(output).toBe(dedent`
       <document>
         <text>
@@ -190,7 +155,7 @@ describe('CLI Integration', () => {
       file1,
       dedent`
       # Circular 1
-      !!tag-composer circular2.md
+      @@circular2.md
     `,
     )
 
@@ -198,7 +163,7 @@ describe('CLI Integration', () => {
       file2,
       dedent`
       # Circular 2
-      !!tag-composer circular1.md
+      @@circular1.md
     `,
     )
 
@@ -217,7 +182,7 @@ describe('CLI Integration', () => {
       file1,
       dedent`
       # Circular 1
-      !!tag-composer circular2.md
+      @@circular2.md
     `,
     )
 
@@ -225,7 +190,7 @@ describe('CLI Integration', () => {
       file2,
       dedent`
       # Circular 2
-      !!tag-composer circular1.md
+      @@circular1.md
     `,
     )
 
@@ -250,7 +215,7 @@ describe('CLI Integration', () => {
       writeFileSync(nestedFile, '# Nested content')
 
       const content = dedent`
-        !!tag-composer "foo/bar/baz.md"
+        @@foo/bar/baz.md
       `
       writeFileSync(testFile, content)
 
@@ -279,7 +244,7 @@ describe('CLI Integration', () => {
       writeFileSync(subFile, '# Single dir')
 
       const content = dedent`
-        !!tag-composer "sub/file.md"
+        @@sub/file.md
       `
       writeFileSync(testFile, content)
 
@@ -299,12 +264,12 @@ describe('CLI Integration', () => {
       `)
     })
 
-    it('should not wrap content for files in root directory', () => {
-      const rootFile = join(tempDir, 'root.md')
-      writeFileSync(rootFile, '# Root file')
+    it('should handle files in the same directory', () => {
+      const sameFile = join(tempDir, 'same.md')
+      writeFileSync(sameFile, '# Same dir')
 
       const content = dedent`
-        !!tag-composer "root.md"
+        @@same.md
       `
       writeFileSync(testFile, content)
 
@@ -315,21 +280,21 @@ describe('CLI Integration', () => {
       expect(output).toBe(dedent`
         <document>
           <text>
-            # Root file
+            # Same dir
           </text>
         </document>
       
       `)
     })
 
-    it('should handle relative paths with dots correctly', () => {
-      const nestedDir = join(tempDir, 'foo', 'bar')
-      mkdirSync(nestedDir, { recursive: true })
-      const nestedFile = join(nestedDir, 'baz.md')
-      writeFileSync(nestedFile, '# Relative content')
+    it('should handle absolute paths', () => {
+      const absDir = join(tempDir, 'absolute')
+      mkdirSync(absDir, { recursive: true })
+      const absFile = join(absDir, 'file.md')
+      writeFileSync(absFile, '# Absolute path')
 
       const content = dedent`
-        !!tag-composer "foo/bar/baz.md"
+        @@${absFile}
       `
       writeFileSync(testFile, content)
 
@@ -339,84 +304,169 @@ describe('CLI Integration', () => {
 
       expect(output).toBe(dedent`
         <document>
-          <foo>
-            <bar>
-              <text>
-                # Relative content
-              </text>
-            </bar>
-          </foo>
+          <text>
+            # Absolute path
+          </text>
         </document>
       
       `)
     })
 
-    it('should handle paths with parent directory references', () => {
-      const nestedDir = join(tempDir, 'foo', 'bar')
-      mkdirSync(nestedDir, { recursive: true })
-      const nestedFile = join(nestedDir, 'baz.md')
-      writeFileSync(nestedFile, '# Parent ref content')
+    it('should handle parent directory references', () => {
+      const parentFile = join(tempDir, 'parent.md')
+      writeFileSync(parentFile, '# Parent file')
 
-      const deepDir = join(tempDir, 'deep', 'nested')
-      mkdirSync(deepDir, { recursive: true })
-      const deepFile = join(deepDir, 'test.md')
+      const subDir = join(tempDir, 'sub')
+      mkdirSync(subDir, { recursive: true })
+      const subFile = join(subDir, 'child.md')
 
       const content = dedent`
-        !!tag-composer "../../foo/bar/baz.md"
+        @@../parent.md
       `
-      writeFileSync(deepFile, content)
+      writeFileSync(subFile, content)
 
-      const output = execSync(`node ${originalCwd}/dist/cli.js "${deepFile}"`, {
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --no-resolve-markdown-relative-to-cwd "${subFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <document>
+          <text>
+            # Parent file
+          </text>
+        </document>
+      
+      `)
+    })
+  })
+
+  describe('--resolve-markdown-relative-to-cwd option', () => {
+    it('should resolve relative to CWD by default', () => {
+      const subDir = join(tempDir, 'sub')
+      mkdirSync(subDir, { recursive: true })
+
+      const relativeFile = join(tempDir, 'relative.md')
+      writeFileSync(relativeFile, '# Relative file')
+
+      const content = dedent`
+        @@relative.md
+      `
+      const subFile = join(subDir, 'test.md')
+      writeFileSync(subFile, content)
+
+      const output = execSync(`node ${originalCwd}/dist/cli.js "${subFile}"`, {
         encoding: 'utf-8',
+        cwd: tempDir,
       })
 
       expect(output).toBe(dedent`
         <document>
-          <foo>
-            <bar>
-              <text>
-                # Parent ref content
-              </text>
-            </bar>
-          </foo>
+          <text>
+            # Relative file
+          </text>
         </document>
       
       `)
     })
 
-    it('should handle deeply nested directories', () => {
-      const deepPath = join(tempDir, 'a', 'b', 'c', 'd', 'e')
-      mkdirSync(deepPath, { recursive: true })
-      const deepFile = join(deepPath, 'deep.md')
-      writeFileSync(deepFile, '# Deep content')
+    it('should resolve relative to markdown file with --no-resolve-markdown-relative-to-cwd', () => {
+      const subDir = join(tempDir, 'sub')
+      mkdirSync(subDir, { recursive: true })
+
+      const relativeFile = join(subDir, 'relative.md')
+      writeFileSync(relativeFile, '# Relative in subdir')
 
       const content = dedent`
-        !!tag-composer "a/b/c/d/e/deep.md"
+        @@relative.md
+      `
+      const subFile = join(subDir, 'test.md')
+      writeFileSync(subFile, content)
+
+      // Change working directory to test proper resolution
+      process.chdir(tempDir)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --no-resolve-markdown-relative-to-cwd "${subFile}"`,
+        {
+          encoding: 'utf-8',
+          cwd: tempDir,
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <document>
+          <text>
+            # Relative in subdir
+          </text>
+        </document>
+      
+      `)
+    })
+  })
+
+  describe('--json option', () => {
+    it('should output JSON with --json flag', () => {
+      const content = dedent`
+        # Test
+        Some text
       `
       writeFileSync(testFile, content)
 
-      const output = execSync(`node ${originalCwd}/dist/cli.js "${testFile}"`, {
-        encoding: 'utf-8',
-      })
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --json "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
 
-      expect(output).toBe(dedent`
-        <document>
-          <a>
-            <b>
-              <c>
-                <d>
-                  <e>
-                    <text>
-                      # Deep content
-                    </text>
-                  </e>
-                </d>
-              </c>
-            </b>
-          </a>
-        </document>
-      
-      `)
+      const json = JSON.parse(output)
+      expect(json).toEqual([
+        {
+          type: 'element',
+          name: 'text',
+          elements: [{ type: 'text', text: '# Test' }],
+        },
+        {
+          type: 'element',
+          name: 'text',
+          elements: [{ type: 'text', text: 'Some text' }],
+        },
+      ])
+    })
+
+    it('should output JSON for nested includes', () => {
+      const includedFile = join(tempDir, 'included.md')
+      writeFileSync(includedFile, '# Included')
+
+      const content = dedent`
+        Main
+        @@included.md
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --json "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      const json = JSON.parse(output)
+      expect(json).toEqual([
+        {
+          type: 'element',
+          name: 'text',
+          elements: [{ type: 'text', text: 'Main' }],
+        },
+        {
+          type: 'element',
+          name: 'text',
+          elements: [{ type: 'text', text: '# Included' }],
+        },
+      ])
     })
   })
 })

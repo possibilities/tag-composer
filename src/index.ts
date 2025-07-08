@@ -52,24 +52,14 @@ async function main() {
           options.resolveMarkdownRelativeToCwd !== false
 
         if (options.recursionCheck !== false) {
-          detectCircularDependencies(file, 'tag-composer')
+          detectCircularDependencies(file)
         }
 
         if (options.json) {
-          const result = runPipelineJson(
-            content,
-            'tag-composer',
-            file,
-            resolveRelativeToCwd,
-          )
+          const result = runPipelineJson(content, file, resolveRelativeToCwd)
           process.stdout.write(JSON.stringify(result, null, 2))
         } else {
-          const output = runPipeline(
-            content,
-            'tag-composer',
-            file,
-            resolveRelativeToCwd,
-          )
+          const output = runPipeline(content, file, resolveRelativeToCwd)
           process.stdout.write(output)
         }
       },

@@ -1,33 +1,39 @@
-import { UnparsedCommandLine, ParsedLine, XmlElement } from './types.js'
+import { MarkdownReference, ParsedLine, XmlElement } from './types.js'
 
-function parseCommandLine(
+function parseMarkdownReference(
   line: string,
   lineNumber: number,
-): UnparsedCommandLine {
-  const commandInput = line.substring(2)
-  const content = commandInput.trim()
+): MarkdownReference {
+  const path = line.substring(2).trim()
 
-  if (content.length === 0) {
+  if (path.length === 0) {
     throw new Error(
-      `Parse error at line ${lineNumber}: Command cannot be empty`,
+      `Parse error at line ${lineNumber}: Markdown reference path cannot be empty`,
+    )
+  }
+
+  if (!path.endsWith('.md')) {
+    throw new Error(
+      `Parse error at line ${lineNumber}: Markdown reference must end with .md`,
     )
   }
 
   return {
-    type: 'command',
-    input: commandInput,
+    type: 'markdown-reference',
+    path,
   }
 }
 
 export function parseContent(
   input: string,
-): (ParsedLine | UnparsedCommandLine)[] {
+): (ParsedLine | MarkdownReference)[] {
   return input
     .split('\n')
     .filter(line => line.length > 0)
     .map((line, index) => {
-      if (line.startsWith('!!')) {
-        return parseCommandLine(line, index + 1)
+      const trimmedLine = line.trim()
+      if (trimmedLine.startsWith('@@')) {
+        return parseMarkdownReference(trimmedLine, index + 1)
       }
       return {
         type: 'element',

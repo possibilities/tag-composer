@@ -24,7 +24,7 @@ describe('Circular Dependency Detection', () => {
       file1,
       dedent`
       # File 1
-      !!tag-composer file2.md
+      @@file2.md
     `,
     )
 
@@ -32,7 +32,7 @@ describe('Circular Dependency Detection', () => {
       file2,
       dedent`
       # File 2
-      !!tag-composer file1.md
+      @@file1.md
     `,
     )
 
@@ -52,7 +52,7 @@ describe('Circular Dependency Detection', () => {
       file1,
       dedent`
       # File 1
-      !!tag-composer file2.md
+      @@file2.md
     `,
     )
 
@@ -60,7 +60,7 @@ describe('Circular Dependency Detection', () => {
       file2,
       dedent`
       # File 2
-      !!tag-composer file3.md
+      @@file3.md
     `,
     )
 
@@ -68,7 +68,7 @@ describe('Circular Dependency Detection', () => {
       file3,
       dedent`
       # File 3
-      !!tag-composer file1.md
+      @@file1.md
     `,
     )
 
@@ -86,8 +86,8 @@ describe('Circular Dependency Detection', () => {
       file1,
       dedent`
       # File 1
-      !!tag-composer file2.md
-      !!tag-composer file3.md
+      @@file2.md
+      @@file3.md
     `,
     )
 
@@ -95,7 +95,7 @@ describe('Circular Dependency Detection', () => {
       file2,
       dedent`
       # File 2
-      !!echo "Hello from file2"
+      Just text content
     `,
     )
 
@@ -103,7 +103,7 @@ describe('Circular Dependency Detection', () => {
       file3,
       dedent`
       # File 3
-      !!echo "Hello from file3"
+      More text content
     `,
     )
 
@@ -119,8 +119,8 @@ describe('Circular Dependency Detection', () => {
       file1,
       dedent`
       # File 1
-      !!tag-composer file2.md
-      !!tag-composer file3.md
+      @@file2.md
+      @@file3.md
     `,
     )
 
@@ -128,7 +128,7 @@ describe('Circular Dependency Detection', () => {
       file2,
       dedent`
       # File 2
-      !!tag-composer file3.md
+      @@file3.md
     `,
     )
 
@@ -136,7 +136,7 @@ describe('Circular Dependency Detection', () => {
       file3,
       dedent`
       # File 3
-      !!echo "Hello from file3"
+      Just text content
     `,
     )
 
@@ -150,7 +150,7 @@ describe('Circular Dependency Detection', () => {
       file1,
       dedent`
       # File 1
-      !!tag-composer file1.md
+      @@file1.md
     `,
     )
 
@@ -170,7 +170,7 @@ describe('Circular Dependency Detection', () => {
       file1,
       dedent`
       # File 1
-      !!tag-composer subdir/file2.md
+      @@subdir/file2.md
     `,
     )
 
@@ -178,7 +178,7 @@ describe('Circular Dependency Detection', () => {
       file2,
       dedent`
       # File 2
-      !!tag-composer ../file1.md
+      @@../file1.md
     `,
     )
 
@@ -194,23 +194,22 @@ describe('Circular Dependency Detection', () => {
       file1,
       dedent`
       # File 1
-      !!tag-composer nonexistent.md
+      @@nonexistent.md
     `,
     )
 
     expect(() => detectCircularDependencies(file1)).not.toThrow()
   })
 
-  it('should handle non-tag-composer commands', () => {
+  it('should handle files with only text content', () => {
     const file1 = join(tempDir, 'file1.md')
 
     writeFileSync(
       file1,
       dedent`
       # File 1
-      !!echo "Hello"
-      !!ls -la
-      !!pwd
+      This is just text
+      No markdown references here
     `,
     )
 
@@ -225,21 +224,21 @@ describe('Circular Dependency Detection', () => {
     writeFileSync(
       file1,
       dedent`
-      !!tag-composer b.md
+      @@b.md
     `,
     )
 
     writeFileSync(
       file2,
       dedent`
-      !!tag-composer c.md
+      @@c.md
     `,
     )
 
     writeFileSync(
       file3,
       dedent`
-      !!tag-composer a.md
+      @@a.md
     `,
     )
 

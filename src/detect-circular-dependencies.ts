@@ -1,13 +1,17 @@
 import { existsSync, readFileSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { parseContent } from './parse-content.js'
-import { parseCommands } from './parse-commands.js'
-import { isCommandLine } from './types.js'
 
-export function detectCircularDependencies(
-  filePath: string,
-  callingCommandName: string = 'tag-composer',
-): void {
+interface MarkdownReference {
+  type: 'markdown-reference'
+  path: string
+}
+
+function isMarkdownReference(item: any): item is MarkdownReference {
+  return item && item.type === 'markdown-reference'
+}
+
+export function detectCircularDependencies(filePath: string): void {
   const visitedFiles = new Set<string>()
   const currentPath: string[] = []
 
@@ -42,32 +46,11 @@ export function detectCircularDependencies(
     try {
       const content = readFileSync(absolutePath, 'utf-8')
       const parsed = parseContent(content)
-      const commands = parseCommands(parsed, callingCommandName)
 
-      for (const line of commands) {
-        if (
-          isCommandLine(line) &&
-          line.commandName === callingCommandName &&
-          line.ast
-        ) {
-          const command = line.ast.commands?.[0]
-          if (command && command.suffix && Array.isArray(command.suffix)) {
-            const firstArg = command.suffix[0]
-            if (
-              firstArg &&
-              typeof firstArg === 'object' &&
-              'text' in firstArg
-            ) {
-              const targetFile = firstArg.text
-              if (typeof targetFile === 'string') {
-                const resolvedTarget = resolve(
-                  dirname(absolutePath),
-                  targetFile,
-                )
-                checkFile(resolvedTarget)
-              }
-            }
-          }
+      for (const item of parsed) {
+        if (isMarkdownReference(item)) {
+          const resolvedTarget = resolve(dirname(absolutePath), item.path)
+          checkFile(resolvedTarget)
         }
       }
     } finally {

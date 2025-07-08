@@ -14,21 +14,21 @@ async function main() {
     .description('Tag Composer CLI')
     .version(packageJson.version)
     .argument('<file>', 'markdown file')
-    .option('--indent-spaces <number>', 'indent space (default: 2)')
-    .option('--root-tag-name <name>', 'root tag name (default: document)')
     .option('--no-root-tag', 'omit root tag')
-    .option(
-      '--convert-path-to-tag-strategy <strategy>',
-      'strategy for converting paths to tags (choices: all, head, tail, init, last, rest, none, default: all)',
-      'all',
-    )
-    .option('--lift-all-tags-to-root', 'lift all nested tags to the root level')
     .option('--inline-common-tags', 'merge multiple tags with the same name')
+    .option('--root-tag-name <name>', 'root tag name (default: document)')
+    .option('--lift-all-tags-to-root', 'lift all nested tags to the root level')
+    .option('--indent-spaces <number>', 'indent space (default: 2)')
     .option(
       '--sort-tag-to-bottom <tag>',
       'sort specified tag to bottom (can be used multiple times)',
       collectRepeated,
       [],
+    )
+    .option(
+      '--convert-path-to-tag-strategy <strategy>',
+      'strategy for converting paths to tags (choices: all, head, tail, init, last, rest, none, default: all)',
+      'all',
     )
     .allowExcessArguments(false)
     .action(

@@ -14,6 +14,8 @@ npm install tag-composer
 tag-composer input.md
 ```
 
+See the [CLI Guide](./cli.md) for detailed usage and options.
+
 ## Library
 
 ```javascript
@@ -22,3 +24,5 @@ import { composeTags } from 'tag-composer'
 const output = composeTags('input.md')
 console.log(output)
 ```
+
+See the [Library Guide](./lib.md) for detailed usage and options.

@@ -2,6 +2,10 @@ import { Command } from 'commander'
 import packageJson from '../package.json' assert { type: 'json' }
 import { composeTags } from './lib.js'
 
+function collectRepeated(value: string, previous: string[]) {
+  return previous.concat([value])
+}
+
 async function main() {
   const program = new Command()
 
@@ -20,6 +24,12 @@ async function main() {
     )
     .option('--lift-all-tags-to-root', 'lift all nested tags to the root level')
     .option('--inline-common-tags', 'merge multiple tags with the same name')
+    .option(
+      '--sort-tag-to-bottom <tag>',
+      'sort specified tag to bottom (can be used multiple times)',
+      collectRepeated,
+      [],
+    )
     .allowExcessArguments(false)
     .action(
       (
@@ -31,6 +41,7 @@ async function main() {
           convertPathToTagStrategy?: string
           liftAllTagsToRoot?: boolean
           inlineCommonTags?: boolean
+          sortTagToBottom?: string[]
         },
       ) => {
         const output = composeTags(file, {
@@ -40,6 +51,7 @@ async function main() {
           convertPathToTagStrategy: options.convertPathToTagStrategy,
           liftAllTagsToRoot: options.liftAllTagsToRoot,
           inlineCommonTags: options.inlineCommonTags,
+          sortTagsToBottom: options.sortTagToBottom,
         })
         process.stdout.write(output)
       },

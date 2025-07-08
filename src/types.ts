@@ -45,4 +45,5 @@ export interface RenderOptions {
   pathToTagStrategy?: PathToTagStrategy
   liftAllTagsToRoot?: boolean
   inlineCommonTags?: boolean
+  sortTagsToBottom?: string[]
 }

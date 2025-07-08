@@ -7,6 +7,7 @@ import {
   inlineCommonTags,
   applyRootTagTransformation,
   applyIndentationTransformation,
+  sortTagsToBottom,
 } from './transformations.js'
 
 export function runPipeline(
@@ -23,6 +24,10 @@ export function runPipeline(
 
   if (options?.inlineCommonTags) {
     elements = inlineCommonTags(elements)
+  }
+
+  if (options?.sortTagsToBottom && options.sortTagsToBottom.length > 0) {
+    elements = sortTagsToBottom(elements, options.sortTagsToBottom)
   }
 
   elements = applyRootTagTransformation(elements, {

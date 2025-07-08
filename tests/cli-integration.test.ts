@@ -1109,4 +1109,229 @@ describe('CLI Integration', () => {
       `)
     })
   })
+
+  describe('--sort-tag-to-bottom option', () => {
+    it('should sort specified tags to bottom with single option', () => {
+      const nestedDir = join(tempDir, 'a')
+      mkdirSync(nestedDir, { recursive: true })
+      const fileA = join(nestedDir, 'file.md')
+      writeFileSync(fileA, '# Content A')
+
+      const nestedDirBar = join(tempDir, 'bar')
+      mkdirSync(nestedDirBar, { recursive: true })
+      const fileBar = join(nestedDirBar, 'file.md')
+      writeFileSync(fileBar, '# Content Bar')
+
+      const nestedDirB = join(tempDir, 'b')
+      mkdirSync(nestedDirB, { recursive: true })
+      const fileB = join(nestedDirB, 'file.md')
+      writeFileSync(fileB, '# Content B')
+
+      const nestedDirC = join(tempDir, 'c')
+      mkdirSync(nestedDirC, { recursive: true })
+      const fileC = join(nestedDirC, 'file.md')
+      writeFileSync(fileC, '# Content C')
+
+      const nestedDirFoo = join(tempDir, 'foo')
+      mkdirSync(nestedDirFoo, { recursive: true })
+      const fileFoo = join(nestedDirFoo, 'file.md')
+      writeFileSync(fileFoo, '# Content Foo')
+
+      const content = dedent`
+        @@a/file.md
+        @@bar/file.md
+        @@b/file.md
+        @@c/file.md
+        @@foo/file.md
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --sort-tag-to-bottom foo "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <document>
+          <a>
+            # Content A
+          </a>
+          <bar>
+            # Content Bar
+          </bar>
+          <b>
+            # Content B
+          </b>
+          <c>
+            # Content C
+          </c>
+          <foo>
+            # Content Foo
+          </foo>
+        </document>
+      
+      `)
+    })
+
+    it('should sort multiple tags to bottom with multiple options', () => {
+      const nestedDir = join(tempDir, 'a')
+      mkdirSync(nestedDir, { recursive: true })
+      const fileA = join(nestedDir, 'file.md')
+      writeFileSync(fileA, '# Content A')
+
+      const nestedDirBar = join(tempDir, 'bar')
+      mkdirSync(nestedDirBar, { recursive: true })
+      const fileBar = join(nestedDirBar, 'file.md')
+      writeFileSync(fileBar, '# Content Bar')
+
+      const nestedDirB = join(tempDir, 'b')
+      mkdirSync(nestedDirB, { recursive: true })
+      const fileB = join(nestedDirB, 'file.md')
+      writeFileSync(fileB, '# Content B')
+
+      const nestedDirC = join(tempDir, 'c')
+      mkdirSync(nestedDirC, { recursive: true })
+      const fileC = join(nestedDirC, 'file.md')
+      writeFileSync(fileC, '# Content C')
+
+      const nestedDirFoo = join(tempDir, 'foo')
+      mkdirSync(nestedDirFoo, { recursive: true })
+      const fileFoo = join(nestedDirFoo, 'file.md')
+      writeFileSync(fileFoo, '# Content Foo')
+
+      const content = dedent`
+        @@a/file.md
+        @@bar/file.md
+        @@b/file.md
+        @@c/file.md
+        @@foo/file.md
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --sort-tag-to-bottom foo --sort-tag-to-bottom bar "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <document>
+          <a>
+            # Content A
+          </a>
+          <b>
+            # Content B
+          </b>
+          <c>
+            # Content C
+          </c>
+          <bar>
+            # Content Bar
+          </bar>
+          <foo>
+            # Content Foo
+          </foo>
+        </document>
+      
+      `)
+    })
+
+    it('should sort tags recursively at all levels', () => {
+      const deepDir = join(tempDir, 'parent')
+      mkdirSync(deepDir, { recursive: true })
+      const parentFile = join(deepDir, 'content.md')
+
+      mkdirSync(join(tempDir, 'parent', 'a'), { recursive: true })
+      writeFileSync(join(tempDir, 'parent', 'a', 'file.md'), '# A content')
+
+      mkdirSync(join(tempDir, 'parent', 'bar'), { recursive: true })
+      writeFileSync(join(tempDir, 'parent', 'bar', 'file.md'), '# Bar content')
+
+      mkdirSync(join(tempDir, 'parent', 'b'), { recursive: true })
+      writeFileSync(join(tempDir, 'parent', 'b', 'file.md'), '# B content')
+
+      mkdirSync(join(tempDir, 'parent', 'foo'), { recursive: true })
+      writeFileSync(join(tempDir, 'parent', 'foo', 'file.md'), '# Foo content')
+
+      const content = dedent`
+        @@a/file.md
+        @@bar/file.md
+        @@b/file.md
+        @@foo/file.md
+      `
+      writeFileSync(parentFile, content)
+
+      const mainContent = dedent`
+        @@parent/content.md
+      `
+      writeFileSync(testFile, mainContent)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --sort-tag-to-bottom foo --sort-tag-to-bottom bar "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <document>
+          <parent>
+            <a>
+              # A content
+            </a>
+            <b>
+              # B content
+            </b>
+            <bar>
+              # Bar content
+            </bar>
+            <foo>
+              # Foo content
+            </foo>
+          </parent>
+        </document>
+      
+      `)
+    })
+
+    it('should work with other options like --indent-spaces', () => {
+      const nestedDir = join(tempDir, 'a')
+      mkdirSync(nestedDir, { recursive: true })
+      const fileA = join(nestedDir, 'file.md')
+      writeFileSync(fileA, '# Content A')
+
+      const nestedDirFoo = join(tempDir, 'foo')
+      mkdirSync(nestedDirFoo, { recursive: true })
+      const fileFoo = join(nestedDirFoo, 'file.md')
+      writeFileSync(fileFoo, '# Content Foo')
+
+      const content = dedent`
+        @@a/file.md
+        @@foo/file.md
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --indent-spaces 4 --sort-tag-to-bottom foo "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <document>
+            <a>
+                # Content A
+            </a>
+            <foo>
+                # Content Foo
+            </foo>
+        </document>
+      
+      `)
+    })
+  })
 })

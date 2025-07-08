@@ -82,6 +82,14 @@ export const cliArgsSchema = z.object({
     ),
   liftAllTagsToRoot: z.boolean().optional(),
   inlineCommonTags: z.boolean().optional(),
+  sortTagsToBottom: z
+    .array(
+      z.string().refine(isValidTagName, name => ({
+        message: `Invalid tag name '${name}'. Tag names must start with a letter and contain only letters, numbers, and hyphens.`,
+      })),
+    )
+    .optional()
+    .default([]),
 })
 
 export type CliArgs = z.infer<typeof cliArgsSchema>

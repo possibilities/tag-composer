@@ -4,6 +4,45 @@ function isXmlElement(node: XmlNode): node is XmlElement {
   return node.type === 'element'
 }
 
+export function sortTagsToBottom(
+  elements: ParsedLine[],
+  tagNames: string[],
+): ParsedLine[] {
+  if (!tagNames || tagNames.length === 0) {
+    return elements
+  }
+
+  const tagNamesSet = new Set(tagNames)
+
+  function sortElementsRecursively(nodes: XmlNode[]): XmlNode[] {
+    const sortedNodes: XmlNode[] = []
+    const bottomNodes: XmlNode[] = []
+
+    for (const node of nodes) {
+      if (isXmlElement(node)) {
+        const shouldMoveToBottom = tagNamesSet.has(node.name)
+
+        const processedNode = { ...node }
+        if (node.elements) {
+          processedNode.elements = sortElementsRecursively(node.elements)
+        }
+
+        if (shouldMoveToBottom) {
+          bottomNodes.push(processedNode)
+        } else {
+          sortedNodes.push(processedNode)
+        }
+      } else {
+        sortedNodes.push(node)
+      }
+    }
+
+    return [...sortedNodes, ...bottomNodes]
+  }
+
+  return sortElementsRecursively(elements) as ParsedLine[]
+}
+
 export function liftAllTagsToRoot(elements: ParsedLine[]): ParsedLine[] {
   const result: ParsedLine[] = []
 

@@ -26,9 +26,7 @@ describe('Full Pipeline Integration', () => {
     expect(tags).toBe(dedent`
       <document>
         <text>
-          <content>
-            This is a simple script
-          </content>
+          This is a simple script
         </text>
         <command name="echo">
           <input>
@@ -51,9 +49,7 @@ describe('Full Pipeline Integration', () => {
           <stderr/>
         </command>
         <text>
-          <content>
-            All done!
-          </content>
+          All done!
         </text>
       </document>
     `)
@@ -93,9 +89,7 @@ describe('Full Pipeline Integration', () => {
     expect(tags).toBe(dedent`
       <document>
         <text>
-          <content>
-            Testing error handling
-          </content>
+          Testing error handling
         </text>
         <command name="false">
           <input>
@@ -116,9 +110,7 @@ describe('Full Pipeline Integration', () => {
           </stderr>
         </command>
         <text>
-          <content>
-            Script continues after errors
-          </content>
+          Script continues after errors
         </text>
       </document>
     `)
@@ -162,9 +154,7 @@ describe('Full Pipeline Integration', () => {
     expect(tags).toBe(dedent`
       <document>
         <text>
-          <content>
-            System Information Report
-          </content>
+          System Information Report
         </text>
         <command name="echo">
           <input>
@@ -205,9 +195,7 @@ describe('Full Pipeline Integration', () => {
           <stderr/>
         </command>
         <text>
-          <content>
-            Report complete.
-          </content>
+          Report complete.
         </text>
       </document>
     `)
@@ -241,19 +229,13 @@ describe('Full Pipeline Integration', () => {
     expect(tags).toBe(dedent`
       <document>
         <text>
-          <content>
-            This is just text
-          </content>
+          This is just text
         </text>
         <text>
-          <content>
-            No commands here
-          </content>
+          No commands here
         </text>
         <text>
-          <content>
-            Only documentation
-          </content>
+          Only documentation
         </text>
       </document>
     `)
@@ -308,9 +290,7 @@ describe('Full Pipeline Integration', () => {
     expect(output).toBe(dedent`
       <document>
         <text>
-          <content>
-            # Pipeline Test
-          </content>
+          # Pipeline Test
         </text>
         <command name="echo">
           <input>
@@ -323,9 +303,7 @@ describe('Full Pipeline Integration', () => {
           <stderr/>
         </command>
         <text>
-          <content>
-            Done!
-          </content>
+          Done!
         </text>
       </document>
     `)
@@ -366,14 +344,10 @@ describe('Full Pipeline Integration', () => {
       expect(output).toBe(dedent`
         <document>
           <text>
-            <content>
-              # Main Document
-            </content>
+            # Main Document
           </text>
           <text>
-            <content>
-              # Included Content
-            </content>
+            # Included Content
           </text>
           <command name="echo">
             <input>
@@ -386,14 +360,10 @@ describe('Full Pipeline Integration', () => {
             <stderr/>
           </command>
           <text>
-            <content>
-              More text
-            </content>
+            More text
           </text>
           <text>
-            <content>
-              Footer text
-            </content>
+            Footer text
           </text>
         </document>
       `)
@@ -446,19 +416,13 @@ describe('Full Pipeline Integration', () => {
       expect(output).toBe(dedent`
         <document>
           <text>
-            <content>
-              Top level
-            </content>
+            Top level
           </text>
           <text>
-            <content>
-              Middle layer
-            </content>
+            Middle layer
           </text>
           <text>
-            <content>
-              Deeply nested content
-            </content>
+            Deeply nested content
           </text>
           <command name="echo">
             <input>
@@ -471,14 +435,10 @@ describe('Full Pipeline Integration', () => {
             <stderr/>
           </command>
           <text>
-            <content>
-              Back to middle
-            </content>
+            Back to middle
           </text>
           <text>
-            <content>
-              End of top
-            </content>
+            End of top
           </text>
         </document>
       `)
@@ -498,9 +458,7 @@ describe('Full Pipeline Integration', () => {
     expect(output).toBe(dedent`
       <document>
         <text>
-          <content>
-            Single line text
-          </content>
+          Single line text
         </text>
         <command name="echo">
           <input>

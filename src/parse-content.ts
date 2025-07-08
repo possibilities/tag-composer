@@ -32,13 +32,7 @@ export function parseContent(
       return {
         type: 'element',
         name: 'text',
-        elements: [
-          {
-            type: 'element',
-            name: 'content',
-            elements: [{ type: 'text', text: line }],
-          },
-        ],
+        elements: [{ type: 'text', text: line }],
       } as XmlElement
     })
 }

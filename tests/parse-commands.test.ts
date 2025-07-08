@@ -264,25 +264,13 @@ describe('parseCommands', () => {
       {
         type: 'element',
         name: 'text',
-        elements: [
-          {
-            type: 'element',
-            name: 'content',
-            elements: [{ type: 'text', text: 'Some text' }],
-          },
-        ],
+        elements: [{ type: 'text', text: 'Some text' }],
       },
       { type: 'command' as const, input: 'echo "hello"' },
       {
         type: 'element',
         name: 'text',
-        elements: [
-          {
-            type: 'element',
-            name: 'content',
-            elements: [{ type: 'text', text: 'More text' }],
-          },
-        ],
+        elements: [{ type: 'text', text: 'More text' }],
       },
       { type: 'command' as const, input: 'ls -la' },
     ]
@@ -292,13 +280,7 @@ describe('parseCommands', () => {
     expect(result[0]).toEqual({
       type: 'element',
       name: 'text',
-      elements: [
-        {
-          type: 'element',
-          name: 'content',
-          elements: [{ type: 'text', text: 'Some text' }],
-        },
-      ],
+      elements: [{ type: 'text', text: 'Some text' }],
     })
     expect(result[1]).toMatchObject({
       type: 'element',
@@ -316,13 +298,7 @@ describe('parseCommands', () => {
     expect(result[2]).toEqual({
       type: 'element',
       name: 'text',
-      elements: [
-        {
-          type: 'element',
-          name: 'content',
-          elements: [{ type: 'text', text: 'More text' }],
-        },
-      ],
+      elements: [{ type: 'text', text: 'More text' }],
     })
     expect(result[3]).toMatchObject({
       type: 'element',
@@ -349,13 +325,7 @@ describe('parseCommands', () => {
           {
             type: 'element',
             name: 'text',
-            elements: [
-              {
-                type: 'element',
-                name: 'content',
-                elements: [{ type: 'text', text: 'Child text' }],
-              },
-            ],
+            elements: [{ type: 'text', text: 'Child text' }],
           },
         ],
       },
@@ -374,13 +344,7 @@ describe('parseCommands', () => {
     expect(result[0].elements?.[1]).toEqual({
       type: 'element',
       name: 'text',
-      elements: [
-        {
-          type: 'element',
-          name: 'content',
-          elements: [{ type: 'text', text: 'Child text' }],
-        },
-      ],
+      elements: [{ type: 'text', text: 'Child text' }],
     })
   })
 

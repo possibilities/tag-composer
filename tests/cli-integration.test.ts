@@ -56,9 +56,7 @@ describe('CLI Integration', () => {
     expect(output).toBe(dedent`
       <document>
         <text>
-          <content>
-            # Test Document
-          </content>
+          # Test Document
         </text>
         <command name="echo">
           <input>
@@ -81,9 +79,7 @@ describe('CLI Integration', () => {
           <stderr/>
         </command>
         <text>
-          <content>
-            All done!
-          </content>
+          All done!
         </text>
       </document>
     
@@ -117,19 +113,13 @@ describe('CLI Integration', () => {
     expect(output).toBe(dedent`
       <document>
         <text>
-          <content>
-            # Just Text
-          </content>
+          # Just Text
         </text>
         <text>
-          <content>
-            No commands here
-          </content>
+          No commands here
         </text>
         <text>
-          <content>
-            Only documentation
-          </content>
+          Only documentation
         </text>
       </document>
     
@@ -166,9 +156,7 @@ describe('CLI Integration', () => {
     expect(output).toBe(dedent`
       <document>
         <text>
-          <content>
-            # Valid file
-          </content>
+          # Valid file
         </text>
       </document>
     
@@ -275,9 +263,7 @@ describe('CLI Integration', () => {
           <foo>
             <bar>
               <text>
-                <content>
-                  # Nested content
-                </content>
+                # Nested content
               </text>
             </bar>
           </foo>
@@ -305,9 +291,7 @@ describe('CLI Integration', () => {
         <document>
           <sub>
             <text>
-              <content>
-                # Single dir
-              </content>
+              # Single dir
             </text>
           </sub>
         </document>
@@ -331,9 +315,7 @@ describe('CLI Integration', () => {
       expect(output).toBe(dedent`
         <document>
           <text>
-            <content>
-              # Root file
-            </content>
+            # Root file
           </text>
         </document>
       
@@ -360,9 +342,7 @@ describe('CLI Integration', () => {
           <foo>
             <bar>
               <text>
-                <content>
-                  # Relative content
-                </content>
+                # Relative content
               </text>
             </bar>
           </foo>
@@ -395,9 +375,7 @@ describe('CLI Integration', () => {
           <foo>
             <bar>
               <text>
-                <content>
-                  # Parent ref content
-                </content>
+                # Parent ref content
               </text>
             </bar>
           </foo>
@@ -429,9 +407,7 @@ describe('CLI Integration', () => {
                 <d>
                   <e>
                     <text>
-                      <content>
-                        # Deep content
-                      </content>
+                      # Deep content
                     </text>
                   </e>
                 </d>

@@ -70,13 +70,7 @@ describe('executeCommands', () => {
       {
         type: 'element',
         name: 'text',
-        elements: [
-          {
-            type: 'element',
-            name: 'content',
-            elements: [{ type: 'text', text: 'hello' }],
-          },
-        ],
+        elements: [{ type: 'text', text: 'hello' }],
       } as XmlElement,
       {
         type: 'element',
@@ -111,13 +105,7 @@ describe('executeCommands', () => {
     expect(result[0]).toEqual({
       type: 'element',
       name: 'text',
-      elements: [
-        {
-          type: 'element',
-          name: 'content',
-          elements: [{ type: 'text', text: 'hello' }],
-        },
-      ],
+      elements: [{ type: 'text', text: 'hello' }],
     })
 
     expect(result[1]).toMatchObject({
@@ -205,13 +193,7 @@ describe('executeCommands', () => {
           {
             type: 'element',
             name: 'text',
-            elements: [
-              {
-                type: 'element',
-                name: 'content',
-                elements: [{ type: 'text', text: 'nested text' }],
-              },
-            ],
+            elements: [{ type: 'text', text: 'nested text' }],
           } as XmlElement,
         ],
       } as XmlElement,
@@ -262,13 +244,7 @@ describe('executeCommands', () => {
     expect(result[0].elements![1]).toEqual({
       type: 'element',
       name: 'text',
-      elements: [
-        {
-          type: 'element',
-          name: 'content',
-          elements: [{ type: 'text', text: 'nested text' }],
-        },
-      ],
+      elements: [{ type: 'text', text: 'nested text' }],
     })
 
     expect(result[1]).toMatchObject({
@@ -303,13 +279,7 @@ describe('executeCommands', () => {
       {
         type: 'element',
         name: 'text',
-        elements: [
-          {
-            type: 'element',
-            name: 'content',
-            elements: [{ type: 'text', text: 'start' }],
-          },
-        ],
+        elements: [{ type: 'text', text: 'start' }],
       } as XmlElement,
       {
         type: 'element',
@@ -346,13 +316,7 @@ describe('executeCommands', () => {
       {
         type: 'element',
         name: 'text',
-        elements: [
-          {
-            type: 'element',
-            name: 'content',
-            elements: [{ type: 'text', text: 'end' }],
-          },
-        ],
+        elements: [{ type: 'text', text: 'end' }],
       } as XmlElement,
     ]
 
@@ -361,13 +325,7 @@ describe('executeCommands', () => {
     expect(result[0]).toEqual({
       type: 'element',
       name: 'text',
-      elements: [
-        {
-          type: 'element',
-          name: 'content',
-          elements: [{ type: 'text', text: 'start' }],
-        },
-      ],
+      elements: [{ type: 'text', text: 'start' }],
     })
 
     expect(result[1].elements![0]).toMatchObject({
@@ -421,13 +379,7 @@ describe('executeCommands', () => {
     expect(result[2]).toEqual({
       type: 'element',
       name: 'text',
-      elements: [
-        {
-          type: 'element',
-          name: 'content',
-          elements: [{ type: 'text', text: 'end' }],
-        },
-      ],
+      elements: [{ type: 'text', text: 'end' }],
     })
   })
 })

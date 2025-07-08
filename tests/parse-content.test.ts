@@ -16,24 +16,12 @@ describe('parseContent', () => {
       {
         type: 'element',
         name: 'text',
-        elements: [
-          {
-            type: 'element',
-            name: 'content',
-            elements: [{ type: 'text', text: 'hello world' }],
-          },
-        ],
+        elements: [{ type: 'text', text: 'hello world' }],
       },
       {
         type: 'element',
         name: 'text',
-        elements: [
-          {
-            type: 'element',
-            name: 'content',
-            elements: [{ type: 'text', text: 'goodbye world' }],
-          },
-        ],
+        elements: [{ type: 'text', text: 'goodbye world' }],
       },
     ])
   })
@@ -50,13 +38,7 @@ describe('parseContent', () => {
       {
         type: 'element',
         name: 'text',
-        elements: [
-          {
-            type: 'element',
-            name: 'content',
-            elements: [{ type: 'text', text: 'hello world' }],
-          },
-        ],
+        elements: [{ type: 'text', text: 'hello world' }],
       },
       {
         type: 'command',
@@ -65,13 +47,7 @@ describe('parseContent', () => {
       {
         type: 'element',
         name: 'text',
-        elements: [
-          {
-            type: 'element',
-            name: 'content',
-            elements: [{ type: 'text', text: 'goodbye world' }],
-          },
-        ],
+        elements: [{ type: 'text', text: 'goodbye world' }],
       },
     ])
   })
@@ -88,13 +64,7 @@ describe('parseContent', () => {
       {
         type: 'element',
         name: 'text',
-        elements: [
-          {
-            type: 'element',
-            name: 'content',
-            elements: [{ type: 'text', text: 'hello world' }],
-          },
-        ],
+        elements: [{ type: 'text', text: 'hello world' }],
       },
       {
         type: 'element',
@@ -130,13 +100,7 @@ describe('parseContent', () => {
       {
         type: 'element',
         name: 'text',
-        elements: [
-          {
-            type: 'element',
-            name: 'content',
-            elements: [{ type: 'text', text: 'goodbye world' }],
-          },
-        ],
+        elements: [{ type: 'text', text: 'goodbye world' }],
       },
     ])
   })
@@ -174,13 +138,7 @@ describe('parseContent', () => {
       {
         type: 'element',
         name: 'text',
-        elements: [
-          {
-            type: 'element',
-            name: 'content',
-            elements: [{ type: 'text', text: 'hello' }],
-          },
-        ],
+        elements: [{ type: 'text', text: 'hello' }],
       },
       {
         type: 'command',
@@ -189,13 +147,7 @@ describe('parseContent', () => {
       {
         type: 'element',
         name: 'text',
-        elements: [
-          {
-            type: 'element',
-            name: 'content',
-            elements: [{ type: 'text', text: 'world' }],
-          },
-        ],
+        elements: [{ type: 'text', text: 'world' }],
       },
     ])
 

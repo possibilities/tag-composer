@@ -26,22 +26,34 @@ describe('Full Pipeline Integration', () => {
     expect(tags).toBe(dedent`
       <document>
         <text>
-          <content>This is a simple script</content>
+          <content>
+            This is a simple script
+          </content>
         </text>
         <command name="echo">
-          <input>echo "Hello from the pipeline"</input>
+          <input>
+            echo "Hello from the pipeline"
+          </input>
           <exit status="success" code="0"/>
-          <stdout>Hello from the pipeline</stdout>
+          <stdout>
+            Hello from the pipeline
+          </stdout>
           <stderr/>
         </command>
         <command name="echo">
-          <input>echo "Testing 123"</input>
+          <input>
+            echo "Testing 123"
+          </input>
           <exit status="success" code="0"/>
-          <stdout>Testing 123</stdout>
+          <stdout>
+            Testing 123
+          </stdout>
           <stderr/>
         </command>
         <text>
-          <content>All done!</content>
+          <content>
+            All done!
+          </content>
         </text>
       </document>
     `)
@@ -81,22 +93,32 @@ describe('Full Pipeline Integration', () => {
     expect(tags).toBe(dedent`
       <document>
         <text>
-          <content>Testing error handling</content>
+          <content>
+            Testing error handling
+          </content>
         </text>
         <command name="false">
-          <input>false</input>
+          <input>
+            false
+          </input>
           <exit status="failure" code="1"/>
           <stdout/>
           <stderr/>
         </command>
         <command name="sh">
-          <input>sh -c "echo 'Error message' &gt;&amp;2 &amp;&amp; exit 42"</input>
+          <input>
+            sh -c "echo 'Error message' &gt;&amp;2 &amp;&amp; exit 42"
+          </input>
           <exit status="failure" code="42"/>
           <stdout/>
-          <stderr>Error message</stderr>
+          <stderr>
+            Error message
+          </stderr>
         </command>
         <text>
-          <content>Script continues after errors</content>
+          <content>
+            Script continues after errors
+          </content>
         </text>
       </document>
     `)
@@ -123,18 +145,18 @@ describe('Full Pipeline Integration', () => {
 
     expect(tags).toMatch(/<document>/)
     expect(tags).toMatch(
-      /<text>\s*<content>System Information Report<\/content>\s*<\/text>/,
+      /<text>\s*<content>\s*System Information Report\s*<\/content>\s*<\/text>/,
     )
     expect(tags).toMatch(
-      /<command name="echo">\s*<input>echo "Processing report..."<\/input>/,
+      /<command name="echo">\s*<input>\s*echo "Processing report..."\s*<\/input>/,
     )
 
     expect(tags).toMatch(/<exit status="success" code="0"\/>/)
-    expect(tags).toMatch(/<command name="pwd">\s*<input>pwd<\/input>/)
-    expect(tags).toMatch(/<command name="false">\s*<input>false<\/input>/)
+    expect(tags).toMatch(/<command name="pwd">\s*<input>\s*pwd\s*<\/input>/)
+    expect(tags).toMatch(/<command name="false">\s*<input>\s*false\s*<\/input>/)
     expect(tags).toMatch(/<exit status="failure" code="1"\/>/)
     expect(tags).toMatch(
-      /<text>\s*<content>Report complete\.<\/content>\s*<\/text>/,
+      /<text>\s*<content>\s*Report complete\.\s*<\/content>\s*<\/text>/,
     )
     expect(tags).toMatch(/<\/document>/)
   })
@@ -167,13 +189,19 @@ describe('Full Pipeline Integration', () => {
     expect(tags).toBe(dedent`
       <document>
         <text>
-          <content>This is just text</content>
+          <content>
+            This is just text
+          </content>
         </text>
         <text>
-          <content>No commands here</content>
+          <content>
+            No commands here
+          </content>
         </text>
         <text>
-          <content>Only documentation</content>
+          <content>
+            Only documentation
+          </content>
         </text>
       </document>
     `)
@@ -193,15 +221,23 @@ describe('Full Pipeline Integration', () => {
     expect(tags).toBe(dedent`
       <document>
         <command name="echo">
-          <input>echo "&lt;tag&gt;Special &amp; chars&lt;/tag&gt;"</input>
+          <input>
+            echo "&lt;tag&gt;Special &amp; chars&lt;/tag&gt;"
+          </input>
           <exit status="success" code="0"/>
-          <stdout>&lt;tag&gt;Special &amp; chars&lt;/tag&gt;</stdout>
+          <stdout>
+            &lt;tag&gt;Special &amp; chars&lt;/tag&gt;
+          </stdout>
           <stderr/>
         </command>
         <command name="echo">
-          <input>echo "Multiple words with spaces"</input>
+          <input>
+            echo "Multiple words with spaces"
+          </input>
           <exit status="success" code="0"/>
-          <stdout>Multiple words with spaces</stdout>
+          <stdout>
+            Multiple words with spaces
+          </stdout>
           <stderr/>
         </command>
       </document>
@@ -220,16 +256,24 @@ describe('Full Pipeline Integration', () => {
     expect(output).toBe(dedent`
       <document>
         <text>
-          <content># Pipeline Test</content>
+          <content>
+            # Pipeline Test
+          </content>
         </text>
         <command name="echo">
-          <input>echo "Testing pipeline"</input>
+          <input>
+            echo "Testing pipeline"
+          </input>
           <exit status="success" code="0"/>
-          <stdout>Testing pipeline</stdout>
+          <stdout>
+            Testing pipeline
+          </stdout>
           <stderr/>
         </command>
         <text>
-          <content>Done!</content>
+          <content>
+            Done!
+          </content>
         </text>
       </document>
     `)
@@ -270,22 +314,34 @@ describe('Full Pipeline Integration', () => {
       expect(output).toBe(dedent`
         <document>
           <text>
-            <content># Main Document</content>
+            <content>
+              # Main Document
+            </content>
           </text>
           <text>
-            <content># Included Content</content>
+            <content>
+              # Included Content
+            </content>
           </text>
           <command name="echo">
-            <input>echo "From included file"</input>
+            <input>
+              echo "From included file"
+            </input>
             <exit status="success" code="0"/>
-            <stdout>From included file</stdout>
+            <stdout>
+              From included file
+            </stdout>
             <stderr/>
           </command>
           <text>
-            <content>More text</content>
+            <content>
+              More text
+            </content>
           </text>
           <text>
-            <content>Footer text</content>
+            <content>
+              Footer text
+            </content>
           </text>
         </document>
       `)
@@ -338,30 +394,67 @@ describe('Full Pipeline Integration', () => {
       expect(output).toBe(dedent`
         <document>
           <text>
-            <content>Top level</content>
+            <content>
+              Top level
+            </content>
           </text>
           <text>
-            <content>Middle layer</content>
+            <content>
+              Middle layer
+            </content>
           </text>
           <text>
-            <content>Deeply nested content</content>
+            <content>
+              Deeply nested content
+            </content>
           </text>
           <command name="echo">
-            <input>echo "From nested"</input>
+            <input>
+              echo "From nested"
+            </input>
             <exit status="success" code="0"/>
-            <stdout>From nested</stdout>
+            <stdout>
+              From nested
+            </stdout>
             <stderr/>
           </command>
           <text>
-            <content>Back to middle</content>
+            <content>
+              Back to middle
+            </content>
           </text>
           <text>
-            <content>End of top</content>
+            <content>
+              End of top
+            </content>
           </text>
         </document>
       `)
     } finally {
       rmSync(tempDir, { recursive: true, force: true })
     }
+  })
+
+  it('should format text content with proper indentation', () => {
+    const input = dedent`
+      Single line text
+      !!echo "Command output"
+    `
+
+    const output = runPipeline(input)
+
+    // Verify that text content is indented on a new line
+    expect(output).toContain(
+      '    <content>\n      Single line text\n    </content>',
+    )
+
+    // Verify command input and output are also indented
+    expect(output).toContain(
+      '    <input>\n      echo "Command output"\n    </input>',
+    )
+
+    expect(output).toContain(
+      '    <stdout>\n      Command output\n    </stdout>',
+    )
   })
 })

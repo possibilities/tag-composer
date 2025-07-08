@@ -18,7 +18,7 @@ export function renderTags(
   const xmlOptions = {
     compact: false,
     spaces: options.indent || 2,
-    indentText: false,
+    indentText: true,
     indentCdata: false,
     indentAttributes: false,
     ignoreText: false,

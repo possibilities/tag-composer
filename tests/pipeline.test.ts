@@ -143,22 +143,74 @@ describe('Full Pipeline Integration', () => {
 
     const tags = await pipeline(input)
 
-    expect(tags).toMatch(/<document>/)
-    expect(tags).toMatch(
-      /<text>\s*<content>\s*System Information Report\s*<\/content>\s*<\/text>/,
-    )
-    expect(tags).toMatch(
-      /<command name="echo">\s*<input>\s*echo "Processing report..."\s*<\/input>/,
-    )
+    // Extract the pwd output to handle dynamic content
+    const lines = tags.split('\n')
+    let pwdOutput = ''
+    let foundPwdCommand = false
 
-    expect(tags).toMatch(/<exit status="success" code="0"\/>/)
-    expect(tags).toMatch(/<command name="pwd">\s*<input>\s*pwd\s*<\/input>/)
-    expect(tags).toMatch(/<command name="false">\s*<input>\s*false\s*<\/input>/)
-    expect(tags).toMatch(/<exit status="failure" code="1"\/>/)
-    expect(tags).toMatch(
-      /<text>\s*<content>\s*Report complete\.\s*<\/content>\s*<\/text>/,
-    )
-    expect(tags).toMatch(/<\/document>/)
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].includes('<command name="pwd">')) {
+        foundPwdCommand = true
+      }
+      if (foundPwdCommand && lines[i].includes('<stdout>')) {
+        // Next line should contain the pwd output
+        pwdOutput = lines[i + 1].trim()
+        break
+      }
+    }
+
+    expect(tags).toBe(dedent`
+      <document>
+        <text>
+          <content>
+            System Information Report
+          </content>
+        </text>
+        <command name="echo">
+          <input>
+            echo "Processing report..."
+          </input>
+          <exit status="success" code="0"/>
+          <stdout>
+            Processing report...
+          </stdout>
+          <stderr/>
+        </command>
+        <command name="pwd">
+          <input>
+            pwd
+          </input>
+          <exit status="success" code="0"/>
+          <stdout>
+            ${pwdOutput}
+          </stdout>
+          <stderr/>
+        </command>
+        <command name="echo">
+          <input>
+            echo "Current directory shown above"
+          </input>
+          <exit status="success" code="0"/>
+          <stdout>
+            Current directory shown above
+          </stdout>
+          <stderr/>
+        </command>
+        <command name="false">
+          <input>
+            false
+          </input>
+          <exit status="failure" code="1"/>
+          <stdout/>
+          <stderr/>
+        </command>
+        <text>
+          <content>
+            Report complete.
+          </content>
+        </text>
+      </document>
+    `)
   })
 
   it('should handle empty input', async () => {
@@ -443,18 +495,24 @@ describe('Full Pipeline Integration', () => {
 
     const output = runPipeline(input)
 
-    // Verify that text content is indented on a new line
-    expect(output).toContain(
-      '    <content>\n      Single line text\n    </content>',
-    )
-
-    // Verify command input and output are also indented
-    expect(output).toContain(
-      '    <input>\n      echo "Command output"\n    </input>',
-    )
-
-    expect(output).toContain(
-      '    <stdout>\n      Command output\n    </stdout>',
-    )
+    expect(output).toBe(dedent`
+      <document>
+        <text>
+          <content>
+            Single line text
+          </content>
+        </text>
+        <command name="echo">
+          <input>
+            echo "Command output"
+          </input>
+          <exit status="success" code="0"/>
+          <stdout>
+            Command output
+          </stdout>
+          <stderr/>
+        </command>
+      </document>
+    `)
   })
 })

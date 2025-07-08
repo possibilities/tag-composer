@@ -37,15 +37,57 @@ describe('CLI Integration', () => {
       encoding: 'utf-8',
     })
 
-    expect(output).toContain('<document>')
-    expect(output).toContain('<text>')
-    expect(output).toContain('# Test Document')
-    expect(output).toContain('<command name="echo">')
-    expect(output).toContain('echo "Hello from CLI"')
-    expect(output).toContain('Hello from CLI')
-    expect(output).toContain('pwd')
-    expect(output).toContain('All done!')
-    expect(output).toContain('</document>')
+    // Extract the pwd output to handle dynamic content
+    const lines = output.split('\n')
+    let pwdOutput = ''
+    let foundPwdCommand = false
+
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].includes('<command name="pwd">')) {
+        foundPwdCommand = true
+      }
+      if (foundPwdCommand && lines[i].includes('<stdout>')) {
+        // Next line should contain the pwd output
+        pwdOutput = lines[i + 1].trim()
+        break
+      }
+    }
+
+    expect(output).toBe(dedent`
+      <document>
+        <text>
+          <content>
+            # Test Document
+          </content>
+        </text>
+        <command name="echo">
+          <input>
+            echo "Hello from CLI"
+          </input>
+          <exit status="success" code="0"/>
+          <stdout>
+            Hello from CLI
+          </stdout>
+          <stderr/>
+        </command>
+        <command name="pwd">
+          <input>
+            pwd
+          </input>
+          <exit status="success" code="0"/>
+          <stdout>
+            ${pwdOutput}
+          </stdout>
+          <stderr/>
+        </command>
+        <text>
+          <content>
+            All done!
+          </content>
+        </text>
+      </document>
+    
+    `)
   })
 
   it('should handle empty markdown files', () => {

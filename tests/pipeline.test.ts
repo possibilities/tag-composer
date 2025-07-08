@@ -241,7 +241,7 @@ describe('Full Pipeline Integration', () => {
     `
 
     expect(() => runPipeline(input, 'tag-composer')).toThrow(
-      /File 'invalid-file.md' not found/,
+      /File '.*invalid-file\.md' not found/,
     )
   })
 

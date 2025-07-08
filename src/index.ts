@@ -19,9 +19,24 @@ async function main() {
       'check for circular dependencies (default: true)',
     )
     .option('--no-recursion-check', 'skip circular dependency check')
+    .option(
+      '--resolve-markdown-relative-to-cwd',
+      'resolve markdown paths relative to current working directory (default: true)',
+    )
+    .option(
+      '--no-resolve-markdown-relative-to-cwd',
+      'resolve markdown paths relative to the markdown file',
+    )
     .allowExcessArguments(false)
     .action(
-      (file: string, options: { json?: boolean; recursionCheck?: boolean }) => {
+      (
+        file: string,
+        options: {
+          json?: boolean
+          recursionCheck?: boolean
+          resolveMarkdownRelativeToCwd?: boolean
+        },
+      ) => {
         if (!existsSync(file)) {
           throw new Error(`Error: File '${file}' not found`)
         }
@@ -33,16 +48,28 @@ async function main() {
         }
 
         const content = readFileSync(file, 'utf-8')
+        const resolveRelativeToCwd =
+          options.resolveMarkdownRelativeToCwd !== false
 
         if (options.recursionCheck !== false) {
           detectCircularDependencies(file, 'tag-composer')
         }
 
         if (options.json) {
-          const result = runPipelineJson(content, 'tag-composer')
+          const result = runPipelineJson(
+            content,
+            'tag-composer',
+            file,
+            resolveRelativeToCwd,
+          )
           process.stdout.write(JSON.stringify(result, null, 2))
         } else {
-          const output = runPipeline(content, 'tag-composer')
+          const output = runPipeline(
+            content,
+            'tag-composer',
+            file,
+            resolveRelativeToCwd,
+          )
           process.stdout.write(output)
         }
       },

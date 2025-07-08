@@ -1,4 +1,5 @@
 import { spawnSync } from 'child_process'
+import { dirname, normalize, relative, resolve } from 'path'
 import {
   ParsedLine,
   ExecutionResult,
@@ -7,6 +8,58 @@ import {
   XmlElement,
   XmlNode,
 } from './types.js'
+
+function resolvePath(
+  pathArg: string,
+  currentFile: string | undefined,
+  resolveRelativeToCwd: boolean,
+): string {
+  if (pathArg.startsWith('/')) {
+    return pathArg
+  } else {
+    if (resolveRelativeToCwd || !currentFile) {
+      return resolve(process.cwd(), pathArg)
+    } else {
+      return resolve(dirname(currentFile), pathArg)
+    }
+  }
+}
+
+function extractDirectorySegments(filePath: string): string[] {
+  const normalizedPath = normalize(filePath)
+  const directoryPath = dirname(normalizedPath)
+
+  if (directoryPath === '.' || directoryPath === '') {
+    return []
+  }
+
+  const segments = directoryPath.split('/')
+  const filteredSegments = segments.filter(segment => {
+    return segment !== '' && segment !== '.' && !/^\.+$/.test(segment)
+  })
+
+  return filteredSegments
+}
+
+function wrapInNestedTags(
+  segments: string[],
+  content: ParsedLine[],
+): ParsedLine[] {
+  if (segments.length === 0) {
+    return content
+  }
+
+  const innerSegment = segments[segments.length - 1]
+  const outerSegments = segments.slice(0, -1)
+
+  const wrappedElement: XmlElement = {
+    type: 'element',
+    name: innerSegment,
+    elements: content,
+  }
+
+  return wrapInNestedTags(outerSegments, [wrappedElement])
+}
 
 function executeCommand(command: string): ExecutionResult {
   const result = spawnSync('sh', ['-c', command], {
@@ -24,6 +77,8 @@ function executeCommand(command: string): ExecutionResult {
 function executeTagComposerCommand(
   line: CommandLine,
   _callingCommandName: string,
+  currentFilePath?: string,
+  _resolveRelativeToCwd?: boolean,
 ): ParsedLine[] {
   const command = line.ast?.commands?.[0]
   if (!command || !command.suffix) {
@@ -41,11 +96,29 @@ function executeTagComposerCommand(
     )
   }
 
-  const cliPath = new URL('../dist/cli.js', import.meta.url).pathname
-  const commandWithJson = `node ${cliPath} --json --no-recursion-check ${command.suffix
-    .map(s => (typeof s === 'object' && 'text' in s ? s.text : ''))
+  const suffixTexts = command.suffix
+    .map(s => {
+      if (typeof s === 'object' && 'text' in s && typeof s.text === 'string') {
+        return s.text
+      } else if (typeof s === 'string') {
+        return s
+      }
+      return ''
+    })
     .filter(Boolean)
-    .join(' ')}`
+
+  const filePath = suffixTexts.find(text => text.endsWith('.md'))
+
+  if (!filePath) {
+    throw new Error('No markdown file specified in tag-composer command')
+  }
+
+  const resolvedFilePath = resolvePath(filePath, currentFilePath, false)
+
+  const otherArgs = suffixTexts.filter(text => text !== filePath)
+
+  const cliPath = new URL('../dist/cli.js', import.meta.url).pathname
+  const commandWithJson = `node ${cliPath} --json --no-recursion-check --no-resolve-markdown-relative-to-cwd ${otherArgs.join(' ')} "${resolvedFilePath}"`
 
   const result = executeCommand(commandWithJson)
 
@@ -57,7 +130,22 @@ function executeTagComposerCommand(
 
   try {
     const parsedJson: ParsedLine[] = JSON.parse(result.stdout)
-    return parsedJson
+
+    const cwd = process.cwd()
+
+    let directorySegments: string[] = []
+
+    if (resolvedFilePath.startsWith(cwd)) {
+      const relativeToCwd = relative(cwd, resolvedFilePath)
+      directorySegments = extractDirectorySegments(relativeToCwd)
+    } else if (!filePath.startsWith('/')) {
+      const normalizedPath = normalize(filePath)
+      directorySegments = extractDirectorySegments(normalizedPath)
+    } else {
+      directorySegments = []
+    }
+
+    return wrapInNestedTags(directorySegments, parsedJson)
   } catch (error) {
     throw new Error(
       `Failed to parse output from ${line.commandName}: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -101,12 +189,19 @@ function findInputElement(elements: XmlNode[] | undefined): string | undefined {
 export function executeCommands(
   lines: ParsedLine[],
   callingCommandName?: string,
+  currentFilePath?: string,
+  resolveRelativeToCwd?: boolean,
 ): ParsedLine[] {
   return lines.flatMap(line => {
     if (isCommandLine(line)) {
       const input = findInputElement(line.elements)
       if (input && line.commandName === callingCommandName && line.ast) {
-        return executeTagComposerCommand(line, callingCommandName)
+        return executeTagComposerCommand(
+          line,
+          callingCommandName,
+          currentFilePath,
+          resolveRelativeToCwd,
+        )
       }
 
       if (input) {
@@ -147,7 +242,12 @@ export function executeCommands(
     if (line.elements) {
       const processedElements = line.elements.map(elem => {
         if (elem.type === 'element' && elem.elements) {
-          const processed = executeCommands([elem], callingCommandName)[0]
+          const processed = executeCommands(
+            [elem],
+            callingCommandName,
+            currentFilePath,
+            resolveRelativeToCwd,
+          )[0]
           return processed
         }
         return elem

@@ -1,10 +1,6 @@
 import { Command } from 'commander'
 import packageJson from '../package.json' assert { type: 'json' }
-import { readFileSync } from 'fs'
-import { runPipeline } from './pipeline.js'
-import { detectCircularDependencies } from './detect-circular-dependencies.js'
-import { cliArgsSchema } from './cli-schema.js'
-import { ZodError } from 'zod'
+import { composeTags } from './lib.js'
 
 async function main() {
   const program = new Command()
@@ -37,37 +33,15 @@ async function main() {
           inlineCommonTags?: boolean
         },
       ) => {
-        try {
-          const validatedArgs = cliArgsSchema.parse({
-            file,
-            indentSpaces: options.indentSpaces,
-            rootTagName: options.rootTagName,
-            rootTag: options.rootTag,
-            convertPathToTagStrategy: options.convertPathToTagStrategy,
-            liftAllTagsToRoot: options.liftAllTagsToRoot,
-            inlineCommonTags: options.inlineCommonTags,
-          })
-
-          const content = readFileSync(validatedArgs.file, 'utf-8')
-          detectCircularDependencies(validatedArgs.file)
-
-          const shouldOmitRootTag = validatedArgs.rootTag === false
-          const output = runPipeline(content, validatedArgs.file, {
-            indent: validatedArgs.indentSpaces,
-            rootTag: validatedArgs.rootTagName,
-            noRootTag: shouldOmitRootTag,
-            pathToTagStrategy: validatedArgs.convertPathToTagStrategy,
-            liftAllTagsToRoot: validatedArgs.liftAllTagsToRoot,
-            inlineCommonTags: validatedArgs.inlineCommonTags,
-          })
-          process.stdout.write(output)
-        } catch (error) {
-          if (error instanceof ZodError) {
-            const firstError = error.errors[0]
-            throw new Error(`Error: ${firstError.message}`)
-          }
-          throw error
-        }
+        const output = composeTags(file, {
+          indentSpaces: options.indentSpaces,
+          rootTagName: options.rootTagName,
+          rootTag: options.rootTag,
+          convertPathToTagStrategy: options.convertPathToTagStrategy,
+          liftAllTagsToRoot: options.liftAllTagsToRoot,
+          inlineCommonTags: options.inlineCommonTags,
+        })
+        process.stdout.write(output)
       },
     )
 

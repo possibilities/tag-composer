@@ -1,6 +1,6 @@
 # Tag Composer
 
-Compose markdown files with references into XML-tagged documents.
+Compose the content of markdown files into an xml-like tag structure.
 
 ## Install
 
@@ -14,7 +14,7 @@ npm install tag-composer
 tag-composer input.md
 ```
 
-See the [CLI Guide](./cli.md) for detailed usage and options.
+Learn more in the [CLI Guide](./cli.md)
 
 ## Library
 
@@ -25,4 +25,4 @@ const output = composeTags('input.md')
 console.log(output)
 ```
 
-See the [Library Guide](./lib.md) for detailed usage and options.
+Learn more in the [Library Guide](./lib.md)

@@ -9,6 +9,6 @@ export function runPipeline(
   options?: RenderOptions,
 ): string {
   const parsed = parseContent(input)
-  const processed = processMarkdownReferences(parsed, currentFilePath)
+  const processed = processMarkdownReferences(parsed, currentFilePath, options)
   return renderTags(processed, options)
 }

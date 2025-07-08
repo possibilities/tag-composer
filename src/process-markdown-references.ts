@@ -1,6 +1,13 @@
 import { dirname, normalize, resolve } from 'path'
 import { existsSync, readFileSync } from 'fs'
-import { ParsedLine, MarkdownReference, XmlNode, XmlElement } from './types.js'
+import {
+  ParsedLine,
+  MarkdownReference,
+  XmlNode,
+  XmlElement,
+  PathToTagStrategy,
+  RenderOptions,
+} from './types.js'
 import { parseContent } from './parse-content.js'
 
 function isMarkdownReference(
@@ -23,6 +30,27 @@ function extractDirectorySegments(filePath: string): string[] {
   })
 
   return validDirectoryNames
+}
+
+function applyPathStrategy(
+  segments: string[],
+  strategy: PathToTagStrategy = 'all',
+): string[] {
+  if (segments.length === 0) return segments
+
+  switch (strategy) {
+    case 'all':
+      return segments
+    case 'head':
+      return segments.slice(0, 1)
+    case 'tail':
+    case 'rest':
+      return segments.slice(1)
+    case 'init':
+      return segments.slice(0, -1)
+    case 'last':
+      return segments.slice(-1)
+  }
 }
 
 function wrapInNestedTags(
@@ -63,6 +91,7 @@ function resolveMarkdownPath(
 function processMarkdownFile(
   reference: MarkdownReference,
   currentFilePath?: string,
+  options?: RenderOptions,
 ): ParsedLine[] {
   const resolvedFilePath = resolveMarkdownPath(reference.path, currentFilePath)
 
@@ -72,12 +101,16 @@ function processMarkdownFile(
 
   const content = readFileSync(resolvedFilePath, 'utf-8')
   const parsed = parseContent(content)
-  const processed = processMarkdownReferences(parsed, resolvedFilePath)
+  const processed = processMarkdownReferences(parsed, resolvedFilePath, options)
 
   let directorySegments: string[] = []
 
   if (!reference.path.startsWith('/')) {
     directorySegments = extractDirectorySegments(reference.path)
+    directorySegments = applyPathStrategy(
+      directorySegments,
+      options?.pathToTagStrategy,
+    )
   }
 
   return wrapInNestedTags(directorySegments, processed)
@@ -86,10 +119,11 @@ function processMarkdownFile(
 export function processMarkdownReferences(
   items: (ParsedLine | MarkdownReference)[],
   currentFilePath?: string,
+  options?: RenderOptions,
 ): ParsedLine[] {
   return items.flatMap(item => {
     if (isMarkdownReference(item)) {
-      return processMarkdownFile(item, currentFilePath)
+      return processMarkdownFile(item, currentFilePath, options)
     }
 
     if ('elements' in item && item.elements) {
@@ -98,6 +132,7 @@ export function processMarkdownReferences(
           const processed = processMarkdownReferences(
             [elem],
             currentFilePath,
+            options,
           )[0]
           return processed
         }

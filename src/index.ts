@@ -5,6 +5,7 @@ import { extname, resolve } from 'path'
 import { homedir } from 'os'
 import { runPipeline } from './pipeline.js'
 import { detectCircularDependencies } from './detect-circular-dependencies.js'
+import { PathToTagStrategy } from './types.js'
 
 function isValidTagName(name: string): boolean {
   if (name.toLowerCase().startsWith('xml')) return false
@@ -23,6 +24,11 @@ async function main() {
     .option('--indent-spaces <number>', 'indent space (default: 2)')
     .option('--root-tag-name <name>', 'root tag name (default: document)')
     .option('--no-root-tag', 'omit root tag')
+    .option(
+      '--convert-path-to-tag-strategy <strategy>',
+      'strategy for converting paths to tags (choices: all, head, tail, init, last, rest, default: all)',
+      'all',
+    )
     .allowExcessArguments(false)
     .action(
       (
@@ -31,6 +37,7 @@ async function main() {
           indentSpaces?: string
           rootTagName?: string
           rootTag?: boolean
+          convertPathToTagStrategy?: string
         },
       ) => {
         if (file.startsWith('~/')) {
@@ -69,11 +76,28 @@ async function main() {
           )
         }
 
+        const validStrategies: PathToTagStrategy[] = [
+          'all',
+          'head',
+          'tail',
+          'init',
+          'last',
+          'rest',
+        ]
+        const pathStrategy =
+          options.convertPathToTagStrategy as PathToTagStrategy
+        if (!validStrategies.includes(pathStrategy)) {
+          throw new Error(
+            `Error: Invalid --convert-path-to-tag-strategy value '${options.convertPathToTagStrategy}'. Valid choices are: ${validStrategies.join(', ')}`,
+          )
+        }
+
         const shouldOmitRootTag = options.rootTag === false
         const output = runPipeline(content, file, {
           indent: indentSpaces,
           rootTag: options.rootTagName,
           noRootTag: shouldOmitRootTag,
+          pathToTagStrategy: pathStrategy,
         })
         process.stdout.write(output)
       },

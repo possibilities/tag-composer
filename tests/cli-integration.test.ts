@@ -747,4 +747,166 @@ describe('CLI Integration', () => {
       `)
     })
   })
+
+  describe('--convert-path-to-tag-strategy option', () => {
+    beforeEach(() => {
+      const nestedDir = join(tempDir, 'docs', 'api', 'v1')
+      mkdirSync(nestedDir, { recursive: true })
+      const nestedFile = join(nestedDir, 'endpoints.md')
+      writeFileSync(nestedFile, '# API Endpoints')
+    })
+
+    it('should use all strategy by default', () => {
+      const content = dedent`
+        @@docs/api/v1/endpoints.md
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(`node ${originalCwd}/dist/cli.js "${testFile}"`, {
+        encoding: 'utf-8',
+      })
+
+      expect(output).toBe(dedent`
+        <document>
+          <docs>
+            <api>
+              <v1>
+                # API Endpoints
+              </v1>
+            </api>
+          </docs>
+        </document>
+      
+      `)
+    })
+
+    it('should use head strategy', () => {
+      const content = dedent`
+        @@docs/api/v1/endpoints.md
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --convert-path-to-tag-strategy head "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <document>
+          <docs>
+            # API Endpoints
+          </docs>
+        </document>
+      
+      `)
+    })
+
+    it('should use tail strategy', () => {
+      const content = dedent`
+        @@docs/api/v1/endpoints.md
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --convert-path-to-tag-strategy tail "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <document>
+          <api>
+            <v1>
+              # API Endpoints
+            </v1>
+          </api>
+        </document>
+      
+      `)
+    })
+
+    it('should use init strategy', () => {
+      const content = dedent`
+        @@docs/api/v1/endpoints.md
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --convert-path-to-tag-strategy init "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <document>
+          <docs>
+            <api>
+              # API Endpoints
+            </api>
+          </docs>
+        </document>
+      
+      `)
+    })
+
+    it('should use last strategy', () => {
+      const content = dedent`
+        @@docs/api/v1/endpoints.md
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --convert-path-to-tag-strategy last "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <document>
+          <v1>
+            # API Endpoints
+          </v1>
+        </document>
+      
+      `)
+    })
+
+    it('should reject invalid strategy', () => {
+      writeFileSync(testFile, '# Test')
+
+      expect(() => {
+        execSync(
+          `node ${originalCwd}/dist/cli.js --convert-path-to-tag-strategy invalid "${testFile}"`,
+          {
+            encoding: 'utf-8',
+          },
+        )
+      }).toThrow(/Invalid --convert-path-to-tag-strategy value 'invalid'/)
+    })
+
+    it('should work with --no-root-tag and path strategy', () => {
+      const content = dedent`
+        @@docs/api/v1/endpoints.md
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --no-root-tag --convert-path-to-tag-strategy head "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <docs>
+          # API Endpoints
+        </docs>
+      `)
+    })
+  })
 })

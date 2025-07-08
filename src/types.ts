@@ -29,8 +29,17 @@ export interface MarkdownReference {
 
 export type ParsedLine = XmlElement | XmlText
 
+export type PathToTagStrategy =
+  | 'all'
+  | 'head'
+  | 'tail'
+  | 'init'
+  | 'last'
+  | 'rest'
+
 export interface RenderOptions {
   indent?: number
   rootTag?: string
   noRootTag?: boolean
+  pathToTagStrategy?: PathToTagStrategy
 }

@@ -54,7 +54,7 @@ The CLI and library support various options to control how tags are generated an
 ## Install
 
 ```bash
-npm install tag-composer
+pnpm add tag-composer
 ```
 
 ## CLI

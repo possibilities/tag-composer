@@ -5,7 +5,7 @@ This guide covers using tag-composer from the command line.
 ## Installation
 
 ```bash
-npm install -g tag-composer
+pnpm install -g tag-composer
 ```
 
 Or use it directly with npx:
@@ -80,66 +80,4 @@ tag-composer \
   --lift-all-tags-to-root \
   --inline-common-tags \
   input.md > output.xml
-```
-
-## Help
-
-View all available options:
-
-```bash
-tag-composer --help
-```
-
-Check version:
-
-```bash
-tag-composer --version
-```
-
-## Processing Multiple Files
-
-Process multiple files using shell scripting:
-
-```bash
-# Process all markdown files in a directory
-for file in docs/*.md; do
-  tag-composer "$file" > "output/$(basename "$file" .md).xml"
-done
-```
-
-## Integration with Other Tools
-
-Pipe output to other commands:
-
-```bash
-# Pretty print with xmllint
-tag-composer input.md | xmllint --format -
-
-# Extract specific tags with xmlstarlet
-tag-composer input.md | xmlstarlet sel -t -v "//methods"
-```
-
-## Exit Codes
-
-- `0`: Success
-- `1`: Error (invalid file, circular dependency, invalid options)
-
-## Common Use Cases
-
-### Documentation Processing
-
-```bash
-tag-composer --root-tag-name docs --convert-path-to-tag-strategy last index.md
-```
-
-### Markdown to XML Pipeline
-
-```bash
-tag-composer input.md | xsltproc transform.xsl - > final.html
-```
-
-### Validation
-
-```bash
-tag-composer input.md && echo "Valid" || echo "Error"
 ```

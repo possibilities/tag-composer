@@ -75,3 +75,7 @@ console.log(output)
 ```
 
 Learn more in the [Library Guide](./lib.md)
+
+## Tasks
+
+- [ ] Split into CLI and Library packages to avoid taking on CLI dependencies in the library

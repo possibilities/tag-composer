@@ -357,65 +357,6 @@ describe('CLI Integration', () => {
     }
   })
 
-  describe('--json option', () => {
-    it('should output JSON with --json flag', () => {
-      const content = dedent`
-        # Test
-        Some text
-      `
-      writeFileSync(testFile, content)
-
-      const output = execSync(
-        `node ${originalCwd}/dist/cli.js --json "${testFile}"`,
-        {
-          encoding: 'utf-8',
-        },
-      )
-
-      const json = JSON.parse(output)
-      expect(json).toEqual([
-        {
-          type: 'text',
-          text: '# Test',
-        },
-        {
-          type: 'text',
-          text: 'Some text',
-        },
-      ])
-    })
-
-    it('should output JSON for nested includes', () => {
-      const includedFile = join(tempDir, 'included.md')
-      writeFileSync(includedFile, '# Included')
-
-      const content = dedent`
-        Main
-        @@included.md
-      `
-      writeFileSync(testFile, content)
-
-      const output = execSync(
-        `node ${originalCwd}/dist/cli.js --json "${testFile}"`,
-        {
-          encoding: 'utf-8',
-        },
-      )
-
-      const json = JSON.parse(output)
-      expect(json).toEqual([
-        {
-          type: 'text',
-          text: 'Main',
-        },
-        {
-          type: 'text',
-          text: '# Included',
-        },
-      ])
-    })
-  })
-
   describe('--indent-spaces option', () => {
     it('should use custom indentation with --indent-spaces 4', () => {
       const content = dedent`

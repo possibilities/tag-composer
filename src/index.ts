@@ -3,7 +3,7 @@ import packageJson from '../package.json' assert { type: 'json' }
 import { existsSync, readFileSync } from 'fs'
 import { extname, resolve } from 'path'
 import { homedir } from 'os'
-import { runPipeline, runPipelineJson } from './pipeline.js'
+import { runPipeline } from './pipeline.js'
 import { detectCircularDependencies } from './detect-circular-dependencies.js'
 
 function isValidTagName(name: string): boolean {
@@ -20,7 +20,6 @@ async function main() {
     .description('Tag Composer CLI')
     .version(packageJson.version)
     .argument('<file>', 'markdown file')
-    .option('--json', 'output as JSON instead of formatted tags')
     .option('--indent-spaces <number>', 'indent space (default: 2)')
     .option('--root-tag-name <name>', 'root tag name (default: document)')
     .option('--no-root-tag', 'omit root tag')
@@ -29,7 +28,6 @@ async function main() {
       (
         file: string,
         options: {
-          json?: boolean
           indentSpaces?: string
           rootTagName?: string
           rootTag?: boolean
@@ -71,18 +69,13 @@ async function main() {
           )
         }
 
-        if (options.json) {
-          const result = runPipelineJson(content, file)
-          process.stdout.write(JSON.stringify(result, null, 2))
-        } else {
-          const shouldOmitRootTag = options.rootTag === false
-          const output = runPipeline(content, file, {
-            indent: indentSpaces,
-            rootTag: options.rootTagName,
-            noRootTag: shouldOmitRootTag,
-          })
-          process.stdout.write(output)
-        }
+        const shouldOmitRootTag = options.rootTag === false
+        const output = runPipeline(content, file, {
+          indent: indentSpaces,
+          rootTag: options.rootTagName,
+          noRootTag: shouldOmitRootTag,
+        })
+        process.stdout.write(output)
       },
     )
 

@@ -1,7 +1,7 @@
 import { parseContent } from './parse-content.js'
 import { processMarkdownReferences } from './process-markdown-references.js'
 import { renderTags } from './render-tags.js'
-import { ParsedLine, RenderOptions } from './types.js'
+import { RenderOptions } from './types.js'
 
 export function runPipeline(
   input: string,
@@ -11,13 +11,4 @@ export function runPipeline(
   const parsed = parseContent(input)
   const processed = processMarkdownReferences(parsed, currentFilePath)
   return renderTags(processed, options)
-}
-
-export function runPipelineJson(
-  input: string,
-  currentFilePath?: string,
-): ParsedLine[] {
-  const parsed = parseContent(input)
-  const processed = processMarkdownReferences(parsed, currentFilePath)
-  return processed
 }

@@ -1,6 +1,7 @@
 import { dirname, normalize, resolve } from 'path'
-import { spawnSync } from 'child_process'
+import { existsSync, readFileSync } from 'fs'
 import { ParsedLine, MarkdownReference, XmlNode, XmlElement } from './types.js'
+import { parseContent } from './parse-content.js'
 
 function isMarkdownReference(
   item: ParsedLine | MarkdownReference,
@@ -65,35 +66,21 @@ function processMarkdownFile(
 ): ParsedLine[] {
   const resolvedFilePath = resolveMarkdownPath(reference.path, currentFilePath)
 
-  const cliPath = new URL('../dist/cli.js', import.meta.url).pathname
-  const command = `node ${cliPath} --json "${resolvedFilePath}"`
-
-  const result = spawnSync('sh', ['-c', command], {
-    encoding: 'utf8',
-    shell: false,
-  })
-
-  if (result.status !== 0) {
-    throw new Error(
-      result.stderr || result.stdout || `Failed to process ${reference.path}`,
-    )
+  if (!existsSync(resolvedFilePath)) {
+    throw new Error(`Error: File '${resolvedFilePath}' not found`)
   }
 
-  try {
-    const parsedJson: ParsedLine[] = JSON.parse(result.stdout)
+  const content = readFileSync(resolvedFilePath, 'utf-8')
+  const parsed = parseContent(content)
+  const processed = processMarkdownReferences(parsed, resolvedFilePath)
 
-    let directorySegments: string[] = []
+  let directorySegments: string[] = []
 
-    if (!reference.path.startsWith('/')) {
-      directorySegments = extractDirectorySegments(reference.path)
-    }
-
-    return wrapInNestedTags(directorySegments, parsedJson)
-  } catch (error) {
-    throw new Error(
-      `Failed to parse output from ${reference.path}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-    )
+  if (!reference.path.startsWith('/')) {
+    directorySegments = extractDirectorySegments(reference.path)
   }
+
+  return wrapInNestedTags(directorySegments, processed)
 }
 
 export function processMarkdownReferences(

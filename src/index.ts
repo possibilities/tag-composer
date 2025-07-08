@@ -1,17 +1,10 @@
 import { Command } from 'commander'
 import packageJson from '../package.json' assert { type: 'json' }
-import { existsSync, readFileSync } from 'fs'
-import { extname, resolve } from 'path'
-import { homedir } from 'os'
+import { readFileSync } from 'fs'
 import { runPipeline } from './pipeline.js'
 import { detectCircularDependencies } from './detect-circular-dependencies.js'
-import { PathToTagStrategy } from './types.js'
-
-function isValidTagName(name: string): boolean {
-  if (name.toLowerCase().startsWith('xml')) return false
-
-  return /^[a-zA-Z][a-zA-Z0-9-]*$/.test(name)
-}
+import { cliArgsSchema } from './cli-schema.js'
+import { ZodError } from 'zod'
 
 async function main() {
   const program = new Command()
@@ -44,69 +37,37 @@ async function main() {
           inlineCommonTags?: boolean
         },
       ) => {
-        if (file.startsWith('~/')) {
-          file = resolve(homedir(), file.slice(2))
+        try {
+          const validatedArgs = cliArgsSchema.parse({
+            file,
+            indentSpaces: options.indentSpaces,
+            rootTagName: options.rootTagName,
+            rootTag: options.rootTag,
+            convertPathToTagStrategy: options.convertPathToTagStrategy,
+            liftAllTagsToRoot: options.liftAllTagsToRoot,
+            inlineCommonTags: options.inlineCommonTags,
+          })
+
+          const content = readFileSync(validatedArgs.file, 'utf-8')
+          detectCircularDependencies(validatedArgs.file)
+
+          const shouldOmitRootTag = validatedArgs.rootTag === false
+          const output = runPipeline(content, validatedArgs.file, {
+            indent: validatedArgs.indentSpaces,
+            rootTag: validatedArgs.rootTagName,
+            noRootTag: shouldOmitRootTag,
+            pathToTagStrategy: validatedArgs.convertPathToTagStrategy,
+            liftAllTagsToRoot: validatedArgs.liftAllTagsToRoot,
+            inlineCommonTags: validatedArgs.inlineCommonTags,
+          })
+          process.stdout.write(output)
+        } catch (error) {
+          if (error instanceof ZodError) {
+            const firstError = error.errors[0]
+            throw new Error(`Error: ${firstError.message}`)
+          }
+          throw error
         }
-        if (!existsSync(file)) {
-          throw new Error(`Error: File '${file}' not found`)
-        }
-
-        if (extname(file).toLowerCase() !== '.md') {
-          throw new Error(
-            `Error: File '${file}' is not a markdown file (must end with .md)`,
-          )
-        }
-
-        const content = readFileSync(file, 'utf-8')
-
-        detectCircularDependencies(file)
-
-        const indentSpaces = options.indentSpaces
-          ? parseInt(options.indentSpaces, 10)
-          : undefined
-
-        if (
-          indentSpaces !== undefined &&
-          (isNaN(indentSpaces) || indentSpaces < 0)
-        ) {
-          throw new Error(
-            'Error: --indent-spaces must be a non-negative number',
-          )
-        }
-
-        if (options.rootTagName && !isValidTagName(options.rootTagName)) {
-          throw new Error(
-            `Error: Invalid tag name '${options.rootTagName}'. Tag names must start with a letter and contain only letters, numbers, and hyphens.`,
-          )
-        }
-
-        const validStrategies: PathToTagStrategy[] = [
-          'all',
-          'head',
-          'tail',
-          'init',
-          'last',
-          'rest',
-          'none',
-        ]
-        const pathStrategy =
-          options.convertPathToTagStrategy as PathToTagStrategy
-        if (!validStrategies.includes(pathStrategy)) {
-          throw new Error(
-            `Error: Invalid --convert-path-to-tag-strategy value '${options.convertPathToTagStrategy}'. Valid choices are: ${validStrategies.join(', ')}`,
-          )
-        }
-
-        const shouldOmitRootTag = options.rootTag === false
-        const output = runPipeline(content, file, {
-          indent: indentSpaces,
-          rootTag: options.rootTagName,
-          noRootTag: shouldOmitRootTag,
-          pathToTagStrategy: pathStrategy,
-          liftAllTagsToRoot: options.liftAllTagsToRoot,
-          inlineCommonTags: options.inlineCommonTags,
-        })
-        process.stdout.write(output)
       },
     )
 

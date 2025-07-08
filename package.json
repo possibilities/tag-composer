@@ -26,7 +26,11 @@
     "test:watch": "vitest --watch",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --run --coverage",
-    "coverage:ui": "vitest --ui --coverage"
+    "coverage:ui": "vitest --ui --coverage",
+    "release": "./release.sh",
+    "release:patch": "./release.sh patch",
+    "release:minor": "./release.sh minor",
+    "release:major": "./release.sh major"
   },
   "dependencies": {
     "commander": "^12.0.0",

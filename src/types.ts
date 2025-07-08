@@ -30,5 +30,5 @@ export interface MarkdownReference {
 export type ParsedLine = XmlElement | XmlText
 
 export interface RenderOptions {
-  indent?: string
+  indent?: number
 }

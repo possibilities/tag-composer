@@ -415,4 +415,179 @@ describe('CLI Integration', () => {
       ])
     })
   })
+
+  describe('--indent-spaces option', () => {
+    it('should use custom indentation with --indent-spaces 4', () => {
+      const content = dedent`
+        # Test
+        Some text
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --indent-spaces 4 "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <document>
+            # Test
+            Some text
+        </document>
+      
+      `)
+    })
+
+    it('should use no indentation with --indent-spaces 0', () => {
+      const content = dedent`
+        # Test
+        Some text
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --indent-spaces 0 "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <document>
+        # Test
+        Some text
+        </document>
+      `)
+    })
+
+    it('should work with nested tags and custom indentation', () => {
+      const nestedDir = join(tempDir, 'foo', 'bar')
+      mkdirSync(nestedDir, { recursive: true })
+      const nestedFile = join(nestedDir, 'baz.md')
+      writeFileSync(nestedFile, '# Nested content')
+
+      const content = dedent`
+        @@foo/bar/baz.md
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --indent-spaces 3 "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <document>
+           <foo>
+              <bar>
+                 # Nested content
+              </bar>
+           </foo>
+        </document>
+      
+      `)
+    })
+
+    it('should work with nested tags and 0 indentation', () => {
+      const nestedDir = join(tempDir, 'foo')
+      mkdirSync(nestedDir, { recursive: true })
+      const nestedFile = join(nestedDir, 'test.md')
+      writeFileSync(
+        nestedFile,
+        dedent`
+        # Nested
+        Content here
+      `,
+      )
+
+      const content = dedent`
+        @@foo/test.md
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --indent-spaces 0 "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <document>
+        <foo>
+        # Nested
+        Content here
+        </foo>
+        </document>
+      `)
+    })
+
+    it('should preserve text indentation with 0 indent spaces', () => {
+      const nestedDir = join(tempDir, 'nested')
+      mkdirSync(nestedDir, { recursive: true })
+      const nestedFile = join(nestedDir, 'list.md')
+      writeFileSync(
+        nestedFile,
+        dedent`
+        - a
+          - b
+            - c
+        - d
+      `,
+      )
+
+      const content = dedent`
+        @@nested/list.md
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --indent-spaces 0 "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <document>
+        <nested>
+        - a
+          - b
+            - c
+        - d
+        </nested>
+        </document>
+      `)
+    })
+
+    it('should reject negative indent spaces', () => {
+      writeFileSync(testFile, '# Test')
+
+      expect(() => {
+        execSync(
+          `node ${originalCwd}/dist/cli.js --indent-spaces -1 "${testFile}"`,
+          {
+            encoding: 'utf-8',
+          },
+        )
+      }).toThrow(/--indent-spaces must be a non-negative number/)
+    })
+
+    it('should reject non-numeric indent spaces', () => {
+      writeFileSync(testFile, '# Test')
+
+      expect(() => {
+        execSync(
+          `node ${originalCwd}/dist/cli.js --indent-spaces abc "${testFile}"`,
+          {
+            encoding: 'utf-8',
+          },
+        )
+      }).toThrow(/--indent-spaces must be a non-negative number/)
+    })
+  })
 })

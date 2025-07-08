@@ -15,12 +15,14 @@ async function main() {
     .version(packageJson.version)
     .argument('<file>', 'markdown file')
     .option('--json', 'output as JSON instead of formatted tags')
+    .option('--indent-spaces <number>', 'indent space (default: 2)')
     .allowExcessArguments(false)
     .action(
       (
         file: string,
         options: {
           json?: boolean
+          indentSpaces?: string
         },
       ) => {
         if (file.startsWith('~/')) {
@@ -40,11 +42,24 @@ async function main() {
 
         detectCircularDependencies(file)
 
+        const indentSpaces = options.indentSpaces
+          ? parseInt(options.indentSpaces, 10)
+          : undefined
+
+        if (
+          indentSpaces !== undefined &&
+          (isNaN(indentSpaces) || indentSpaces < 0)
+        ) {
+          throw new Error(
+            'Error: --indent-spaces must be a non-negative number',
+          )
+        }
+
         if (options.json) {
           const result = runPipelineJson(content, file)
           process.stdout.write(JSON.stringify(result, null, 2))
         } else {
-          const output = runPipeline(content, file)
+          const output = runPipeline(content, file, { indent: indentSpaces })
           process.stdout.write(output)
         }
       },

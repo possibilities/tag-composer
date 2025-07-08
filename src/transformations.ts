@@ -44,9 +44,9 @@ export function liftAllTagsToRoot(elements: ParsedLine[]): ParsedLine[] {
       }
     }
 
-    const hasOnlyElementChildren =
+    const parentIsEmptyAfterLifting =
       textNodes.length === 0 && elementNodes.length === 0
-    if (hasOnlyElementChildren && liftedElements.length > 0) {
+    if (parentIsEmptyAfterLifting && liftedElements.length > 0) {
       return { element: null, lifted: liftedElements }
     }
 
@@ -126,4 +126,64 @@ export function inlineCommonTags(elements: ParsedLine[]): ParsedLine[] {
   }
 
   return result
+}
+
+export function applyRootTagTransformation(
+  elements: ParsedLine[],
+  options: { rootTag?: string; noRootTag?: boolean } = {},
+): ParsedLine[] {
+  if (options.noRootTag) {
+    return elements
+  }
+
+  const rootTagName = options.rootTag || 'document'
+  const rootElement: XmlElement = {
+    type: 'element',
+    name: rootTagName,
+    elements: elements,
+  }
+
+  return [rootElement]
+}
+
+export function applyIndentationTransformation(
+  xml: string,
+  indent: number = 2,
+): string {
+  if (indent === 0) {
+    const lines = xml.split('\n')
+    let tagNestingLevel = 0
+
+    const unindentedLines = lines.map(line => {
+      const trimmedLine = line.trimStart()
+
+      if (trimmedLine.length === 0) {
+        return ''
+      }
+
+      const isClosingTag = trimmedLine.startsWith('</')
+      const isTag = trimmedLine.startsWith('<') && trimmedLine.endsWith('>')
+      const isSelfClosingTag = trimmedLine.endsWith('/>')
+      const isOpeningTag = isTag && !isClosingTag && !isSelfClosingTag
+
+      if (isClosingTag) {
+        tagNestingLevel--
+      }
+
+      if (isTag) {
+        if (isOpeningTag) {
+          tagNestingLevel++
+        }
+        return trimmedLine
+      }
+
+      const leadingSpaceCount = line.length - line.trimStart().length
+      const spacesToPreserve = Math.max(0, leadingSpaceCount - tagNestingLevel)
+      return ' '.repeat(spacesToPreserve) + trimmedLine
+    })
+
+    return unindentedLines.join('\n')
+  }
+
+  return xml
 }

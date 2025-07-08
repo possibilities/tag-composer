@@ -2,7 +2,12 @@ import { parseContent } from './parse-content.js'
 import { processMarkdownReferences } from './process-markdown-references.js'
 import { renderTags } from './render-tags.js'
 import { RenderOptions } from './types.js'
-import { liftAllTagsToRoot, inlineCommonTags } from './transformations.js'
+import {
+  liftAllTagsToRoot,
+  inlineCommonTags,
+  applyRootTagTransformation,
+  applyIndentationTransformation,
+} from './transformations.js'
 
 export function runPipeline(
   input: string,
@@ -10,15 +15,22 @@ export function runPipeline(
   options?: RenderOptions,
 ): string {
   const parsed = parseContent(input)
-  let processed = processMarkdownReferences(parsed, currentFilePath, options)
+  let elements = processMarkdownReferences(parsed, currentFilePath, options)
 
   if (options?.liftAllTagsToRoot) {
-    processed = liftAllTagsToRoot(processed)
+    elements = liftAllTagsToRoot(elements)
   }
 
   if (options?.inlineCommonTags) {
-    processed = inlineCommonTags(processed)
+    elements = inlineCommonTags(elements)
   }
 
-  return renderTags(processed, options)
+  elements = applyRootTagTransformation(elements, {
+    rootTag: options?.rootTag,
+    noRootTag: options?.noRootTag,
+  })
+
+  const xml = renderTags(elements, options?.indent ?? 2)
+
+  return applyIndentationTransformation(xml, options?.indent ?? 2)
 }

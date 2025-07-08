@@ -7,6 +7,7 @@ import { parseContent } from '../src/parse-content'
 import { processMarkdownReferences } from '../src/process-markdown-references'
 import { renderTags } from '../src/render-tags'
 import { runPipeline } from '../src/pipeline'
+import { applyRootTagTransformation } from '../src/transformations'
 
 describe('Full Pipeline Integration', () => {
   let tempDir: string
@@ -32,7 +33,8 @@ describe('Full Pipeline Integration', () => {
 
     const parsed = parseContent(input)
     const processed = processMarkdownReferences(parsed)
-    const tags = renderTags(processed)
+    const withRoot = applyRootTagTransformation(processed)
+    const tags = renderTags(withRoot)
 
     expect(tags).toBe(dedent`
       <document>

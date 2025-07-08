@@ -1,44 +1,10 @@
 import * as convert from 'xml-js'
-import { ParsedLine, RenderOptions } from './types.js'
+import { ParsedLine } from './types.js'
 
-function removeIndentationFromTags(xml: string): string {
-  const lines = xml.split('\n')
-  let currentDepth = 0
-
-  const processedLines = lines.map(line => {
-    const trimmedLine = line.trimStart()
-
-    if (trimmedLine.startsWith('</')) {
-      currentDepth--
-    }
-
-    if (trimmedLine.startsWith('<') && trimmedLine.endsWith('>')) {
-      const result = trimmedLine
-
-      if (!trimmedLine.startsWith('</') && !trimmedLine.endsWith('/>')) {
-        currentDepth++
-      }
-
-      return result
-    }
-
-    if (currentDepth > 0 && line.startsWith(' '.repeat(currentDepth))) {
-      return line.substring(currentDepth)
-    }
-
-    return line
-  })
-
-  return processedLines.join('\n')
-}
-
-export function renderTags(
-  elements: ParsedLine[],
-  options: RenderOptions = {},
-): string {
+export function renderTags(elements: ParsedLine[], indent: number = 2): string {
   const xmlOptions = {
     compact: false,
-    spaces: options.indent === 0 ? 1 : (options.indent ?? 2),
+    spaces: indent === 0 ? 1 : indent,
     indentText: true,
     indentCdata: false,
     indentAttributes: false,
@@ -47,37 +13,9 @@ export function renderTags(
     fullTagEmptyElement: false,
   }
 
-  if (options.noRootTag) {
-    const fragments = elements.map(element => {
-      const fragmentDoc = { elements: [element] }
-      const xml = convert.js2xml(fragmentDoc, xmlOptions)
-
-      if (options.indent === 0) {
-        return removeIndentationFromTags(xml)
-      }
-
-      return xml.trim()
-    })
-
-    return fragments.join('\n')
-  }
-
-  const rootTagName = options.rootTag || 'document'
   const document = {
-    elements: [
-      {
-        type: 'element' as const,
-        name: rootTagName,
-        elements: elements,
-      },
-    ],
+    elements: elements,
   }
 
-  const xml = convert.js2xml(document, xmlOptions)
-
-  if (options.indent === 0) {
-    return removeIndentationFromTags(xml)
-  }
-
-  return xml
+  return convert.js2xml(document, xmlOptions)
 }

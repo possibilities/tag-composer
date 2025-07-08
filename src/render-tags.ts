@@ -36,16 +36,6 @@ export function renderTags(
   elements: ParsedLine[],
   options: RenderOptions = {},
 ): string {
-  const document = {
-    elements: [
-      {
-        type: 'element' as const,
-        name: 'document',
-        elements: elements,
-      },
-    ],
-  }
-
   const xmlOptions = {
     compact: false,
     spaces: options.indent === 0 ? 1 : (options.indent ?? 2),
@@ -55,6 +45,32 @@ export function renderTags(
     ignoreText: false,
     noValidation: true,
     fullTagEmptyElement: false,
+  }
+
+  if (options.noRootTag) {
+    const fragments = elements.map(element => {
+      const fragmentDoc = { elements: [element] }
+      const xml = convert.js2xml(fragmentDoc, xmlOptions)
+
+      if (options.indent === 0) {
+        return removeIndentationFromTags(xml)
+      }
+
+      return xml.trim()
+    })
+
+    return fragments.join('\n')
+  }
+
+  const rootTagName = options.rootTag || 'document'
+  const document = {
+    elements: [
+      {
+        type: 'element' as const,
+        name: rootTagName,
+        elements: elements,
+      },
+    ],
   }
 
   const xml = convert.js2xml(document, xmlOptions)

@@ -6,6 +6,12 @@ import { homedir } from 'os'
 import { runPipeline, runPipelineJson } from './pipeline.js'
 import { detectCircularDependencies } from './detect-circular-dependencies.js'
 
+function isValidTagName(name: string): boolean {
+  if (name.toLowerCase().startsWith('xml')) return false
+
+  return /^[a-zA-Z][a-zA-Z0-9-]*$/.test(name)
+}
+
 async function main() {
   const program = new Command()
 
@@ -16,6 +22,8 @@ async function main() {
     .argument('<file>', 'markdown file')
     .option('--json', 'output as JSON instead of formatted tags')
     .option('--indent-spaces <number>', 'indent space (default: 2)')
+    .option('--root-tag-name <name>', 'root tag name (default: document)')
+    .option('--no-root-tag', 'omit root tag')
     .allowExcessArguments(false)
     .action(
       (
@@ -23,6 +31,8 @@ async function main() {
         options: {
           json?: boolean
           indentSpaces?: string
+          rootTagName?: string
+          rootTag?: boolean
         },
       ) => {
         if (file.startsWith('~/')) {
@@ -55,11 +65,22 @@ async function main() {
           )
         }
 
+        if (options.rootTagName && !isValidTagName(options.rootTagName)) {
+          throw new Error(
+            `Error: Invalid tag name '${options.rootTagName}'. Tag names must start with a letter and contain only letters, numbers, and hyphens.`,
+          )
+        }
+
         if (options.json) {
           const result = runPipelineJson(content, file)
           process.stdout.write(JSON.stringify(result, null, 2))
         } else {
-          const output = runPipeline(content, file, { indent: indentSpaces })
+          const shouldOmitRootTag = options.rootTag === false
+          const output = runPipeline(content, file, {
+            indent: indentSpaces,
+            rootTag: options.rootTagName,
+            noRootTag: shouldOmitRootTag,
+          })
           process.stdout.write(output)
         }
       },

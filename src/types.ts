@@ -31,4 +31,6 @@ export type ParsedLine = XmlElement | XmlText
 
 export interface RenderOptions {
   indent?: number
+  rootTag?: string
+  noRootTag?: boolean
 }

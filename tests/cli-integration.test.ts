@@ -590,4 +590,220 @@ describe('CLI Integration', () => {
       }).toThrow(/--indent-spaces must be a non-negative number/)
     })
   })
+
+  describe('Root tag options', () => {
+    it('should use custom root tag', () => {
+      const content = dedent`
+        # Test Document
+        This is plain text
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --root-tag-name prompt "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <prompt>
+          # Test Document
+          This is plain text
+        </prompt>
+      
+      `)
+    })
+
+    it('should use custom root tag with hyphens', () => {
+      const content = dedent`
+        # Test Document
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --root-tag-name foo-bar "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <foo-bar>
+          # Test Document
+        </foo-bar>
+      
+      `)
+    })
+
+    it('should output fragments with --no-root-tag', () => {
+      const content = dedent`
+        # Heading
+        Some text
+        More content
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --no-root-tag "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        # Heading
+        Some text
+        More content
+      `)
+    })
+
+    it('should output fragments with proper spacing for multiple elements', () => {
+      const content = dedent`
+        First line
+        Second line
+        Third line
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --no-root-tag "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        First line
+        Second line
+        Third line
+      `)
+    })
+
+    it('should reject tag names starting with numbers', () => {
+      writeFileSync(testFile, '# Test')
+
+      expect(() => {
+        execSync(
+          `node ${originalCwd}/dist/cli.js --root-tag-name 123tag "${testFile}"`,
+          {
+            encoding: 'utf-8',
+          },
+        )
+      }).toThrow(/Invalid tag name '123tag'/)
+    })
+
+    it('should reject tag names starting with xml', () => {
+      writeFileSync(testFile, '# Test')
+
+      expect(() => {
+        execSync(
+          `node ${originalCwd}/dist/cli.js --root-tag-name xml-custom "${testFile}"`,
+          {
+            encoding: 'utf-8',
+          },
+        )
+      }).toThrow(/Invalid tag name 'xml-custom'/)
+    })
+
+    it('should reject tag names starting with XML uppercase', () => {
+      writeFileSync(testFile, '# Test')
+
+      expect(() => {
+        execSync(
+          `node ${originalCwd}/dist/cli.js --root-tag-name XMLDocument "${testFile}"`,
+          {
+            encoding: 'utf-8',
+          },
+        )
+      }).toThrow(/Invalid tag name 'XMLDocument'/)
+    })
+
+    it('should reject tag names with underscores', () => {
+      writeFileSync(testFile, '# Test')
+
+      expect(() => {
+        execSync(
+          `node ${originalCwd}/dist/cli.js --root-tag-name my_tag "${testFile}"`,
+          {
+            encoding: 'utf-8',
+          },
+        )
+      }).toThrow(/Invalid tag name 'my_tag'/)
+    })
+
+    it('should reject tag names starting with hyphen', () => {
+      writeFileSync(testFile, '# Test')
+
+      expect(() => {
+        execSync(
+          `node ${originalCwd}/dist/cli.js --root-tag-name -invalid "${testFile}"`,
+          {
+            encoding: 'utf-8',
+          },
+        )
+      }).toThrow(/Invalid tag name '-invalid'/)
+    })
+
+    it('should ignore --root-tag-name when --no-root-tag is used', () => {
+      const content = dedent`
+        # Test Document
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --root-tag-name custom --no-root-tag "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        # Test Document
+      `)
+    })
+
+    it('should work with --indent-spaces 0 and custom root tag', () => {
+      const content = dedent`
+        # Heading
+        Content here
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --root-tag-name prompt --indent-spaces 0 "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        <prompt>
+        # Heading
+        Content here
+        </prompt>
+      
+      `)
+    })
+
+    it('should work with --indent-spaces 0 and --no-root-tag', () => {
+      const content = dedent`
+        # Heading
+        Content here
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --no-root-tag --indent-spaces 0 "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toBe(dedent`
+        # Heading
+        Content here
+      `)
+    })
+  })
 })

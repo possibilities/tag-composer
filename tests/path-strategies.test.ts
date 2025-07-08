@@ -256,6 +256,126 @@ describe('Path to Tag Strategy', () => {
     })
   })
 
+  describe('none strategy', () => {
+    it('should not wrap content in any directory tags', () => {
+      mkdirSync(join(tempDir, 'docs'))
+      mkdirSync(join(tempDir, 'docs/api'))
+      mkdirSync(join(tempDir, 'docs/api/v1'))
+
+      writeFileSync(
+        join(tempDir, 'docs/api/v1/endpoints.md'),
+        dedent`
+          API Endpoints
+          GET /users
+        `,
+      )
+
+      const input = dedent`
+        Documentation
+        @@docs/api/v1/endpoints.md
+      `
+
+      const output = runPipeline(input, join(tempDir, 'main.md'), {
+        pathToTagStrategy: 'none',
+      })
+
+      expect(output).toBe(dedent`
+        <document>
+          Documentation
+          API Endpoints
+          GET /users
+        </document>
+      `)
+    })
+
+    it('should handle nested references without wrapping', () => {
+      mkdirSync(join(tempDir, 'docs'))
+      mkdirSync(join(tempDir, 'docs/api'))
+
+      writeFileSync(
+        join(tempDir, 'docs/api/inner.md'),
+        dedent`
+          Inner content
+        `,
+      )
+
+      writeFileSync(
+        join(tempDir, 'docs/outer.md'),
+        dedent`
+          Outer content
+          @@api/inner.md
+        `,
+      )
+
+      const input = dedent`
+        @@docs/outer.md
+      `
+
+      const output = runPipeline(input, join(tempDir, 'main.md'), {
+        pathToTagStrategy: 'none',
+      })
+
+      expect(output).toBe(dedent`
+        <document>
+          Outer content
+          Inner content
+        </document>
+      `)
+    })
+
+    it('should work with single directory paths', () => {
+      mkdirSync(join(tempDir, 'docs'))
+
+      writeFileSync(
+        join(tempDir, 'docs/readme.md'),
+        dedent`
+          Documentation content
+        `,
+      )
+
+      const input = dedent`
+        @@docs/readme.md
+      `
+
+      const output = runPipeline(input, join(tempDir, 'main.md'), {
+        pathToTagStrategy: 'none',
+      })
+
+      expect(output).toBe(dedent`
+        <document>
+          Documentation content
+        </document>
+      `)
+    })
+
+    it('should handle absolute paths same as other strategies', () => {
+      mkdirSync(join(tempDir, 'docs'))
+      mkdirSync(join(tempDir, 'docs/api'))
+
+      writeFileSync(
+        join(tempDir, 'docs/api/endpoints.md'),
+        dedent`
+          API Endpoints
+        `,
+      )
+
+      const absolutePath = join(tempDir, 'docs/api/endpoints.md')
+      const input = dedent`
+        @@${absolutePath}
+      `
+
+      const output = runPipeline(input, join(tempDir, 'main.md'), {
+        pathToTagStrategy: 'none',
+      })
+
+      expect(output).toBe(dedent`
+        <document>
+          API Endpoints
+        </document>
+      `)
+    })
+  })
+
   describe('edge cases', () => {
     it('should handle files in root directory (no path segments)', () => {
       writeFileSync(

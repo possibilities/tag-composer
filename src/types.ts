@@ -36,6 +36,7 @@ export type PathToTagStrategy =
   | 'init'
   | 'last'
   | 'rest'
+  | 'none'
 
 export interface RenderOptions {
   indent?: number

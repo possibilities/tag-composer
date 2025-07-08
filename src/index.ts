@@ -26,7 +26,7 @@ async function main() {
     .option('--no-root-tag', 'omit root tag')
     .option(
       '--convert-path-to-tag-strategy <strategy>',
-      'strategy for converting paths to tags (choices: all, head, tail, init, last, rest, default: all)',
+      'strategy for converting paths to tags (choices: all, head, tail, init, last, rest, none, default: all)',
       'all',
     )
     .option('--lift-all-tags-to-root', 'lift all nested tags to the root level')
@@ -87,6 +87,7 @@ async function main() {
           'init',
           'last',
           'rest',
+          'none',
         ]
         const pathStrategy =
           options.convertPathToTagStrategy as PathToTagStrategy

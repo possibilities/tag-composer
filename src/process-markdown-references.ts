@@ -50,6 +50,8 @@ function applyPathStrategy(
       return segments.slice(0, -1)
     case 'last':
       return segments.slice(-1)
+    case 'none':
+      return []
   }
 }
 

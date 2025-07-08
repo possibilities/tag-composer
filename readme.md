@@ -18,8 +18,7 @@ docs/
 
 ```bash
 $ cat docs/index.md
-# Documentation
-
+Documentation
 @@docs/intro.md
 @@docs/api/overview.md
 ```
@@ -35,8 +34,7 @@ $ tag-composer docs/index.md
 <document>
   <docs>
     <index>
-      # Documentation
-
+      Documentation
       <intro>
         Welcome to our project!
         This is the introduction.

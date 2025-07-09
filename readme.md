@@ -23,6 +23,8 @@ Documentation
 @@docs/api/overview.md
 ```
 
+**Note:** All `@@` directive paths are resolved relative to the entrypoint file (the file specified on the command line). Absolute paths (starting with `/`) are used as-is.
+
 ```bash
 $ cat docs/intro.md
 Welcome to our project!

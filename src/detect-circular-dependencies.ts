@@ -11,7 +11,11 @@ function isMarkdownReference(item: any): item is MarkdownReference {
   return item && item.type === 'markdown-reference'
 }
 
-export function detectCircularDependencies(filePath: string): void {
+export function detectCircularDependencies(
+  filePath: string,
+  entrypointPath?: string,
+): void {
+  const resolvedEntrypoint = resolve(entrypointPath || filePath)
   const visitedFiles = new Set<string>()
   const currentPath: string[] = []
 
@@ -49,7 +53,9 @@ export function detectCircularDependencies(filePath: string): void {
 
       for (const item of parsed) {
         if (isMarkdownReference(item)) {
-          const resolvedTarget = resolve(dirname(absolutePath), item.path)
+          const resolvedTarget = item.path.startsWith('/')
+            ? item.path
+            : resolve(dirname(resolvedEntrypoint), item.path)
           checkFile(resolvedTarget)
         }
       }

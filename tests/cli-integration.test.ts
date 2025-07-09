@@ -1240,37 +1240,34 @@ describe('CLI Integration', () => {
     })
 
     it('should sort tags recursively at all levels', () => {
-      const deepDir = join(tempDir, 'parent')
-      mkdirSync(deepDir, { recursive: true })
-      const parentFile = join(deepDir, 'content.md')
+      // Create a documentation structure with sections that should be sorted
+      mkdirSync(join(tempDir, 'intro'), { recursive: true })
+      writeFileSync(join(tempDir, 'intro/overview.md'), '# Overview content')
 
-      mkdirSync(join(tempDir, 'parent', 'a'), { recursive: true })
-      writeFileSync(join(tempDir, 'parent', 'a', 'file.md'), '# A content')
+      mkdirSync(join(tempDir, 'api'), { recursive: true })
+      writeFileSync(join(tempDir, 'api/endpoints.md'), '# API endpoints')
 
-      mkdirSync(join(tempDir, 'parent', 'bar'), { recursive: true })
-      writeFileSync(join(tempDir, 'parent', 'bar', 'file.md'), '# Bar content')
+      mkdirSync(join(tempDir, 'guides'), { recursive: true })
+      writeFileSync(join(tempDir, 'guides/tutorial.md'), '# Tutorial content')
 
-      mkdirSync(join(tempDir, 'parent', 'b'), { recursive: true })
-      writeFileSync(join(tempDir, 'parent', 'b', 'file.md'), '# B content')
+      mkdirSync(join(tempDir, 'appendix'), { recursive: true })
+      writeFileSync(join(tempDir, 'appendix/glossary.md'), '# Glossary terms')
 
-      mkdirSync(join(tempDir, 'parent', 'foo'), { recursive: true })
-      writeFileSync(join(tempDir, 'parent', 'foo', 'file.md'), '# Foo content')
-
-      const content = dedent`
-        @@a/file.md
-        @@bar/file.md
-        @@b/file.md
-        @@foo/file.md
-      `
-      writeFileSync(parentFile, content)
+      mkdirSync(join(tempDir, 'footer'), { recursive: true })
+      writeFileSync(join(tempDir, 'footer/links.md'), '# Additional links')
 
       const mainContent = dedent`
-        @@parent/content.md
+        # Documentation
+        @@intro/overview.md
+        @@api/endpoints.md
+        @@guides/tutorial.md
+        @@appendix/glossary.md
+        @@footer/links.md
       `
       writeFileSync(testFile, mainContent)
 
       const output = execSync(
-        `node ${originalCwd}/dist/cli.js --sort-tag-to-bottom foo --sort-tag-to-bottom bar "${testFile}"`,
+        `node ${originalCwd}/dist/cli.js --sort-tag-to-bottom footer --sort-tag-to-bottom appendix "${testFile}"`,
         {
           encoding: 'utf-8',
         },
@@ -1278,20 +1275,22 @@ describe('CLI Integration', () => {
 
       expect(output).toBe(dedent`
         <document>
-          <parent>
-            <a>
-              # A content
-            </a>
-            <b>
-              # B content
-            </b>
-            <foo>
-              # Foo content
-            </foo>
-            <bar>
-              # Bar content
-            </bar>
-          </parent>
+          # Documentation
+          <intro>
+            # Overview content
+          </intro>
+          <api>
+            # API endpoints
+          </api>
+          <guides>
+            # Tutorial content
+          </guides>
+          <footer>
+            # Additional links
+          </footer>
+          <appendix>
+            # Glossary terms
+          </appendix>
         </document>
       
       `)

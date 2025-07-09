@@ -303,7 +303,7 @@ describe('Path to Tag Strategy', () => {
         join(tempDir, 'docs/outer.md'),
         dedent`
           Outer content
-          @@api/inner.md
+          @@docs/api/inner.md
         `,
       )
 
@@ -439,26 +439,26 @@ describe('Path to Tag Strategy', () => {
     })
 
     it('should handle nested references with different strategies', () => {
-      mkdirSync(join(tempDir, 'docs'))
-      mkdirSync(join(tempDir, 'docs/api'))
+      mkdirSync(join(tempDir, 'guides'))
+      mkdirSync(join(tempDir, 'api'))
 
       writeFileSync(
-        join(tempDir, 'docs/api/inner.md'),
+        join(tempDir, 'api/endpoints.md'),
         dedent`
-          Inner content
+          API endpoint details
         `,
       )
 
       writeFileSync(
-        join(tempDir, 'docs/outer.md'),
+        join(tempDir, 'guides/overview.md'),
         dedent`
-          Outer content
-          @@api/inner.md
+          Guide overview
+          @@api/endpoints.md
         `,
       )
 
       const input = dedent`
-        @@docs/outer.md
+        @@guides/overview.md
       `
 
       const output = runPipeline(input, join(tempDir, 'main.md'), {
@@ -467,12 +467,12 @@ describe('Path to Tag Strategy', () => {
 
       expect(output).toBe(dedent`
         <document>
-          <docs>
-            Outer content
+          <guides>
+            Guide overview
             <api>
-              Inner content
+              API endpoint details
             </api>
-          </docs>
+          </guides>
         </document>
       `)
     })

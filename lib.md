@@ -179,6 +179,31 @@ Tag composer processes markdown files that can contain references to other markd
 
 These references are resolved recursively and wrapped in XML tags based on their file paths.
 
+### Path Resolution
+
+All `@@` directive paths are resolved relative to the **entrypoint file** (the file passed to `composeTags()`), not relative to the file containing the directive. This ensures consistent path resolution regardless of nesting depth.
+
+```typescript
+// Given this file structure:
+// project/
+//   docs/
+//     index.md
+//     intro.md
+//     api/
+//       overview.md
+
+// When calling:
+composeTags('docs/index.md')
+
+// In docs/index.md:
+// @@intro.md        -> resolves to docs/intro.md
+// @@api/overview.md -> resolves to docs/api/overview.md
+
+// Even in nested files, paths are still relative to docs/ (the entrypoint directory)
+```
+
+**Absolute paths** (starting with `/`) are always used as-is without modification.
+
 ## Error Handling
 
 The function throws errors for:

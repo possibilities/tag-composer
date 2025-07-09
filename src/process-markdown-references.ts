@@ -77,25 +77,25 @@ function wrapInNestedTags(
 
 function resolveMarkdownPath(
   referencePath: string,
-  currentMarkdownFile: string | undefined,
+  entrypointPath: string,
 ): string {
   if (referencePath.startsWith('/')) {
     return referencePath
   }
 
-  if (currentMarkdownFile) {
-    return resolve(dirname(currentMarkdownFile), referencePath)
-  }
-
-  return resolve(process.cwd(), referencePath)
+  return resolve(dirname(entrypointPath), referencePath)
 }
 
 function processMarkdownFile(
   reference: MarkdownReference,
   currentFilePath?: string,
+  entrypointPath?: string,
   options?: RenderOptions,
 ): ParsedLine[] {
-  const resolvedFilePath = resolveMarkdownPath(reference.path, currentFilePath)
+  const resolvedFilePath = resolveMarkdownPath(
+    reference.path,
+    entrypointPath || currentFilePath || process.cwd(),
+  )
 
   if (!existsSync(resolvedFilePath)) {
     throw new Error(`Error: File '${resolvedFilePath}' not found`)
@@ -103,7 +103,12 @@ function processMarkdownFile(
 
   const content = readFileSync(resolvedFilePath, 'utf-8')
   const parsed = parseContent(content)
-  const processed = processMarkdownReferences(parsed, resolvedFilePath, options)
+  const processed = processMarkdownReferences(
+    parsed,
+    resolvedFilePath,
+    entrypointPath,
+    options,
+  )
 
   let directorySegments: string[] = []
 
@@ -121,11 +126,12 @@ function processMarkdownFile(
 export function processMarkdownReferences(
   items: (ParsedLine | MarkdownReference)[],
   currentFilePath?: string,
+  entrypointPath?: string,
   options?: RenderOptions,
 ): ParsedLine[] {
   return items.flatMap(item => {
     if (isMarkdownReference(item)) {
-      return processMarkdownFile(item, currentFilePath, options)
+      return processMarkdownFile(item, currentFilePath, entrypointPath, options)
     }
 
     if ('elements' in item && item.elements) {
@@ -134,6 +140,7 @@ export function processMarkdownReferences(
           const processed = processMarkdownReferences(
             [elem],
             currentFilePath,
+            entrypointPath,
             options,
           )[0]
           return processed

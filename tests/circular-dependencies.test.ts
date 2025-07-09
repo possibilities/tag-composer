@@ -178,7 +178,7 @@ describe('Circular Dependency Detection', () => {
       file2,
       dedent`
       # File 2
-      @@../file1.md
+      @@file1.md
     `,
     )
 

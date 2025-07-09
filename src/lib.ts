@@ -42,7 +42,7 @@ export function composeTags(
     const validatedArgs = cliArgsSchema.parse(argsToValidate)
 
     const content = readFileSync(validatedArgs.file, 'utf-8')
-    detectCircularDependencies(validatedArgs.file)
+    detectCircularDependencies(validatedArgs.file, validatedArgs.file)
 
     const shouldOmitRootTag = validatedArgs.rootTag === false
     const output = runPipeline(content, validatedArgs.file, {

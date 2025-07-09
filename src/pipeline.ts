@@ -17,7 +17,12 @@ export function runPipeline(
   options?: RenderOptions,
 ): string {
   const parsed = parseContent(input)
-  let elements = processMarkdownReferences(parsed, currentFilePath, options)
+  let elements = processMarkdownReferences(
+    parsed,
+    currentFilePath,
+    currentFilePath,
+    options,
+  )
 
   if (options?.liftAllTagsToRoot) {
     elements = liftAllTagsToRoot(elements)

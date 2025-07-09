@@ -119,3 +119,27 @@ tag-composer \
   --tag-case kebab \
   input.md > output.xml
 ```
+
+### Path Resolution for @@ Directives
+
+When using `@@` directives in markdown files, all relative paths are resolved from the directory of the **entrypoint file** (the file specified on the command line):
+
+```bash
+# Given this structure:
+# docs/
+#   index.md
+#   intro.md
+#   api/
+#     overview.md
+
+# Running:
+tag-composer docs/index.md
+
+# In docs/index.md, these paths:
+# @@intro.md        -> resolves to docs/intro.md
+# @@api/overview.md -> resolves to docs/api/overview.md
+
+# Even in nested files, paths remain relative to docs/
+```
+
+This ensures consistent path resolution regardless of how deeply files are nested. Absolute paths (starting with `/`) are always used as-is.

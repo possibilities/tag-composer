@@ -80,6 +80,8 @@ Move specific tags to appear after their siblings:
 tag-composer --sort-tag-to-bottom footer --sort-tag-to-bottom appendix input.md
 ```
 
+This option can be specified multiple times to sort multiple tags. The specified tags will be moved to appear after all their sibling elements while maintaining their original order relative to each other.
+
 ### Multiple Options
 
 ```bash

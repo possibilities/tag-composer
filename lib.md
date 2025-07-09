@@ -38,6 +38,7 @@ interface ComposeTagsOptions {
   convertPathToTagStrategy?: string // How to convert file paths to tag names
   liftAllTagsToRoot?: boolean // Lift all nested tags to root level
   inlineCommonTags?: boolean // Merge multiple tags with the same name
+  sortTagsToBottom?: string[] // Tag names to move after their siblings
 }
 ```
 
@@ -122,6 +123,11 @@ const result = composeTags('input.md', {
 // Merge multiple occurrences of the same tag
 const result = composeTags('input.md', {
   inlineCommonTags: true,
+})
+
+// Move specific tags to appear after their siblings
+const result = composeTags('input.md', {
+  sortTagsToBottom: ['footer', 'appendix', 'metadata'],
 })
 ```
 

@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { existsSync } from 'fs'
 import { extname, resolve } from 'path'
 import { homedir } from 'os'
-import { PathToTagStrategy } from './types.js'
+import { PathToTagStrategy, TagCaseStyle } from './types.js'
 
 const pathToTagStrategies: PathToTagStrategy[] = [
   'all',
@@ -13,6 +13,8 @@ const pathToTagStrategies: PathToTagStrategy[] = [
   'rest',
   'none',
 ]
+
+const tagCaseStyles: TagCaseStyle[] = ['pascal', 'kebab', 'shout', 'meme']
 
 function expandHomePath(filePath: string): string {
   if (filePath.startsWith('~/')) {
@@ -90,6 +92,16 @@ export const cliArgsSchema = z.object({
     )
     .optional()
     .default([]),
+  tagCase: z
+    .string()
+    .optional()
+    .default('pascal')
+    .refine(
+      (val): val is TagCaseStyle => tagCaseStyles.includes(val as TagCaseStyle),
+      val => ({
+        message: `Invalid --tag-case value '${val}'. Valid choices are: ${tagCaseStyles.join(', ')}`,
+      }),
+    ),
 })
 
 export type CliArgs = z.infer<typeof cliArgsSchema>

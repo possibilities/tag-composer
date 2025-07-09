@@ -39,6 +39,7 @@ interface ComposeTagsOptions {
   liftAllTagsToRoot?: boolean // Lift all nested tags to root level
   inlineCommonTags?: boolean // Merge multiple tags with the same name
   sortTagsToBottom?: string[] // Tag names to move after their siblings
+  tagCase?: string // Case style for tag names ('pascal', 'kebab', 'shout', 'meme', default: 'pascal')
 }
 ```
 
@@ -131,6 +132,39 @@ const result = composeTags('input.md', {
 })
 ```
 
+### Tag Case Styles
+
+Control how tag names are formatted using the `tagCase` option:
+
+```typescript
+// 'pascal' (default) - PascalCase: MyTagName
+const result1 = composeTags('input.md', {
+  tagCase: 'pascal',
+})
+
+// 'kebab' - kebab-case: my-tag-name
+const result2 = composeTags('input.md', {
+  tagCase: 'kebab',
+})
+
+// 'shout' - UPPERCASE: MYTAGNAME
+const result3 = composeTags('input.md', {
+  tagCase: 'shout',
+})
+
+// 'meme' - mEmE cAsE: mYtAgNaMe (alternating caps for fun!)
+const result4 = composeTags('input.md', {
+  tagCase: 'meme',
+})
+```
+
+Example output for a tag `<UserAccount>`:
+
+- `pascal`: `<UserAccount>` (default)
+- `kebab`: `<user-account>`
+- `shout`: `<USERACCOUNT>`
+- `meme`: `<uSeRaCcOuNt>`
+
 ## Markdown References
 
 Tag composer processes markdown files that can contain references to other markdown files using the `@@` syntax:
@@ -167,12 +201,17 @@ try {
 The library includes TypeScript definitions. You can import types for better IDE support:
 
 ```typescript
-import { composeTags, type ComposeTagsOptions } from 'tag-composer'
+import {
+  composeTags,
+  type ComposeTagsOptions,
+  type TagCaseStyle,
+} from 'tag-composer'
 
 const options: ComposeTagsOptions = {
   indentSpaces: 2,
   rootTagName: 'document',
   rootTag: true,
+  tagCase: 'kebab' as TagCaseStyle,
 }
 
 const result = composeTags('input.md', options)
@@ -191,6 +230,7 @@ const xmlOutput = composeTags('docs/index.md', {
   convertPathToTagStrategy: 'last',
   liftAllTagsToRoot: false,
   inlineCommonTags: true,
+  tagCase: 'kebab',
 })
 
 // Write the output to a file

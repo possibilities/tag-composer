@@ -38,6 +38,8 @@ export type PathToTagStrategy =
   | 'rest'
   | 'none'
 
+export type TagCaseStyle = 'pascal' | 'kebab' | 'shout' | 'meme'
+
 export interface RenderOptions {
   indent?: number
   rootTag?: string
@@ -46,4 +48,5 @@ export interface RenderOptions {
   liftAllTagsToRoot?: boolean
   inlineCommonTags?: boolean
   sortTagsToBottom?: string[]
+  tagCase?: TagCaseStyle
 }

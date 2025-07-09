@@ -43,6 +43,7 @@ The CLI accepts the same options as the [library API](./lib.md#options). Options
 | `liftAllTagsToRoot`        | `--lift-all-tags-to-root`         |
 | `inlineCommonTags`         | `--inline-common-tags`            |
 | `sortTagsToBottom`         | `--sort-tag-to-bottom` (multiple) |
+| `tagCase`                  | `--tag-case`                      |
 
 See the [library guide](./lib.md#options) for detailed explanations of each option.
 
@@ -82,6 +83,31 @@ tag-composer --sort-tag-to-bottom footer --sort-tag-to-bottom appendix input.md
 
 This option can be specified multiple times to sort multiple tags. The specified tags will be moved to appear after all their sibling elements while maintaining their original order relative to each other.
 
+### Tag Case Styles
+
+Transform tag names to different case styles:
+
+```bash
+# Default PascalCase
+tag-composer input.md
+
+# kebab-case
+tag-composer --tag-case kebab input.md
+
+# UPPERCASE
+tag-composer --tag-case shout input.md
+
+# mEmE cAsE (for fun!)
+tag-composer --tag-case meme input.md
+```
+
+Available case styles:
+
+- `pascal` (default): PascalCase - `<MyTagName>`
+- `kebab`: kebab-case - `<my-tag-name>`
+- `shout`: UPPERCASE - `<MYTAGNAME>`
+- `meme`: mEmE cAsE - `<mYtAgNaMe>`
+
 ### Multiple Options
 
 ```bash
@@ -90,5 +116,6 @@ tag-composer \
   --root-tag-name documentation \
   --lift-all-tags-to-root \
   --inline-common-tags \
+  --tag-case kebab \
   input.md > output.xml
 ```

@@ -75,7 +75,7 @@ function wrapInNestedTags(
   return wrapInNestedTags(outerSegments, [wrappedElement])
 }
 
-function resolveMarkdownPath(
+function resolveMarkdownPathFromEntrypoint(
   referencePath: string,
   entrypointPath: string,
 ): string {
@@ -88,13 +88,13 @@ function resolveMarkdownPath(
 
 function processMarkdownFile(
   reference: MarkdownReference,
-  currentFilePath?: string,
+  _currentFilePath?: string,
   entrypointPath?: string,
   options?: RenderOptions,
 ): ParsedLine[] {
-  const resolvedFilePath = resolveMarkdownPath(
+  const resolvedFilePath = resolveMarkdownPathFromEntrypoint(
     reference.path,
-    entrypointPath || currentFilePath || process.cwd(),
+    entrypointPath!,
   )
 
   if (!existsSync(resolvedFilePath)) {

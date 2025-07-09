@@ -13,14 +13,14 @@ import {
 
 export function runPipeline(
   input: string,
-  currentFilePath?: string,
+  entrypointFilePath?: string,
   options?: RenderOptions,
 ): string {
   const parsed = parseContent(input)
   let elements = processMarkdownReferences(
     parsed,
-    currentFilePath,
-    currentFilePath,
+    entrypointFilePath,
+    entrypointFilePath,
     options,
   )
 

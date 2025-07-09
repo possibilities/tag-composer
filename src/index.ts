@@ -30,11 +30,6 @@ async function main() {
       'strategy for converting paths to tags (choices: all, head, tail, init, last, rest, none, default: all)',
       'all',
     )
-    .option(
-      '--tag-case <style>',
-      'case style for tag names (choices: pascal, kebab, shout, meme, default: pascal)',
-      'pascal',
-    )
     .allowExcessArguments(false)
     .action(
       (
@@ -47,7 +42,6 @@ async function main() {
           liftAllTagsToRoot?: boolean
           inlineCommonTags?: boolean
           sortTagToBottom?: string[]
-          tagCase?: string
         },
       ) => {
         const output = composeTags(file, {
@@ -58,7 +52,6 @@ async function main() {
           liftAllTagsToRoot: options.liftAllTagsToRoot,
           inlineCommonTags: options.inlineCommonTags,
           sortTagsToBottom: options.sortTagToBottom,
-          tagCase: options.tagCase,
         })
         process.stdout.write(output)
       },

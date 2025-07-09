@@ -1,4 +1,4 @@
-import { ParsedLine, XmlElement, XmlNode, TagCaseStyle } from './types.js'
+import { ParsedLine, XmlElement, XmlNode } from './types.js'
 
 function isXmlElement(node: XmlNode): node is XmlElement {
   return node.type === 'element'
@@ -179,19 +179,13 @@ export function applyRootTagTransformation(
   options: {
     rootTag?: string
     noRootTag?: boolean
-    tagCase?: TagCaseStyle
   } = {},
 ): ParsedLine[] {
   if (options.noRootTag) {
     return elements
   }
 
-  let rootTagName = options.rootTag || 'document'
-
-  // Apply case transformation to root tag if specified
-  if (options.tagCase) {
-    rootTagName = convertTagName(rootTagName, options.tagCase)
-  }
+  const rootTagName = options.rootTag || 'document'
 
   const rootElement: XmlElement = {
     type: 'element',
@@ -242,77 +236,4 @@ export function applyIndentationTransformation(
   }
 
   return xml
-}
-
-function splitPascalCaseWords(str: string): string[] {
-  return str
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
-    .split(/[\s-_]+/)
-    .filter(Boolean)
-}
-
-function convertToKebab(str: string): string {
-  const words = splitPascalCaseWords(str)
-  return words.map(word => word.toLowerCase()).join('-')
-}
-
-function convertToShout(str: string): string {
-  return str.toUpperCase()
-}
-
-function convertToMeme(str: string): string {
-  return str
-    .split('')
-    .map((char, index) =>
-      index % 2 === 0 ? char.toLowerCase() : char.toUpperCase(),
-    )
-    .join('')
-}
-
-function convertTagName(tagName: string, caseStyle: TagCaseStyle): string {
-  switch (caseStyle) {
-    case 'pascal':
-      return tagName
-    case 'kebab':
-      return convertToKebab(tagName)
-    case 'shout':
-      return convertToShout(tagName)
-    case 'meme':
-      return convertToMeme(tagName)
-    default:
-      return tagName
-  }
-}
-
-export function transformTagCase(
-  elements: ParsedLine[],
-  caseStyle: TagCaseStyle,
-): ParsedLine[] {
-  if (caseStyle === 'pascal') {
-    return elements
-  }
-
-  function transformElementRecursively(node: XmlNode): XmlNode {
-    if (isXmlElement(node)) {
-      const transformedNode: XmlElement = {
-        ...node,
-        name: convertTagName(node.name, caseStyle),
-      }
-
-      if (node.elements) {
-        transformedNode.elements = node.elements.map(
-          transformElementRecursively,
-        )
-      }
-
-      return transformedNode
-    }
-
-    return node
-  }
-
-  return elements.map(
-    element => transformElementRecursively(element) as ParsedLine,
-  )
 }

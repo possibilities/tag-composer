@@ -18,6 +18,7 @@ export interface ComposeTagsOptions {
   liftAllTagsToRoot?: boolean
   inlineCommonTags?: boolean
   sortTagsToBottom?: string[]
+  tagCase?: string
 }
 
 export function composeTags(
@@ -34,6 +35,7 @@ export function composeTags(
       liftAllTagsToRoot: options?.liftAllTagsToRoot,
       inlineCommonTags: options?.inlineCommonTags,
       sortTagsToBottom: options?.sortTagsToBottom,
+      tagCase: options?.tagCase,
     }
 
     const validatedArgs = cliArgsSchema.parse(argsToValidate)
@@ -50,6 +52,7 @@ export function composeTags(
       liftAllTagsToRoot: validatedArgs.liftAllTagsToRoot,
       inlineCommonTags: validatedArgs.inlineCommonTags,
       sortTagsToBottom: validatedArgs.sortTagsToBottom,
+      tagCase: validatedArgs.tagCase,
     })
 
     return output

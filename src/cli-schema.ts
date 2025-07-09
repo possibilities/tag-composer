@@ -90,6 +90,7 @@ export const cliArgsSchema = z.object({
     )
     .optional()
     .default([]),
+  tagCase: z.enum(['kebab', 'pascal']).optional().default('kebab'),
 })
 
 export type CliArgs = z.infer<typeof cliArgsSchema>

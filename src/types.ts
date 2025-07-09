@@ -46,4 +46,5 @@ export interface RenderOptions {
   liftAllTagsToRoot?: boolean
   inlineCommonTags?: boolean
   sortTagsToBottom?: string[]
+  tagCase?: 'kebab' | 'pascal'
 }

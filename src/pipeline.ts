@@ -8,6 +8,7 @@ import {
   applyRootTagTransformation,
   applyIndentationTransformation,
   sortTagsToBottom,
+  applyTagCaseTransformation,
 } from './transformations.js'
 
 export function runPipeline(
@@ -39,6 +40,10 @@ export function runPipeline(
     rootTag: options?.rootTag,
     noRootTag: options?.noRootTag,
   })
+
+  if (options?.tagCase) {
+    elements = applyTagCaseTransformation(elements, options.tagCase)
+  }
 
   const xml = renderTags(elements, options?.indent ?? 2)
 

@@ -237,3 +237,47 @@ export function applyIndentationTransformation(
 
   return xml
 }
+
+function kebabToPascal(str: string): string {
+  const hasUpperCase = /[A-Z]/.test(str)
+  if (hasUpperCase) return str
+
+  return str
+    .split('-')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join('')
+}
+
+export function applyTagCaseTransformation(
+  elements: ParsedLine[],
+  tagCase: 'kebab' | 'pascal' = 'kebab',
+): ParsedLine[] {
+  if (tagCase === 'kebab') {
+    return elements
+  }
+
+  function transformElement(element: XmlElement): XmlElement {
+    const transformedElement: XmlElement = {
+      ...element,
+      name: kebabToPascal(element.name),
+    }
+
+    if (element.elements) {
+      transformedElement.elements = element.elements.map((child): XmlNode => {
+        if (isXmlElement(child)) {
+          return transformElement(child)
+        }
+        return child
+      })
+    }
+
+    return transformedElement
+  }
+
+  return elements.map((element): ParsedLine => {
+    if (element.type === 'element') {
+      return transformElement(element)
+    }
+    return element
+  })
+}

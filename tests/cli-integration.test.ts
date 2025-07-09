@@ -1333,4 +1333,126 @@ describe('CLI Integration', () => {
       `)
     })
   })
+
+  describe('--tag-case option', () => {
+    it('should keep kebab-case by default', () => {
+      const content = dedent`
+        # Test Document
+        Content here
+      `
+      writeFileSync(testFile, content)
+
+      const nestedDir = join(tempDir, 'my-folder')
+      mkdirSync(nestedDir, { recursive: true })
+      const nestedFile = join(nestedDir, 'nested-file.md')
+      writeFileSync(nestedFile, '# Nested Content')
+
+      const mainContent = dedent`
+        # Main
+        @@my-folder/nested-file.md
+      `
+      writeFileSync(testFile, mainContent)
+
+      const output = execSync(`node ${originalCwd}/dist/cli.js "${testFile}"`, {
+        encoding: 'utf-8',
+      })
+
+      expect(output).toContain('<my-folder>')
+      expect(output).toContain('</my-folder>')
+    })
+
+    it('should transform to PascalCase when specified', () => {
+      const nestedDir = join(tempDir, 'my-folder')
+      mkdirSync(nestedDir, { recursive: true })
+      const nestedFile = join(nestedDir, 'nested-file.md')
+      writeFileSync(nestedFile, '# Nested Content')
+
+      const mainContent = dedent`
+        # Main
+        @@my-folder/nested-file.md
+      `
+      writeFileSync(testFile, mainContent)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --tag-case pascal "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toContain('<Document>')
+      expect(output).toContain('</Document>')
+      expect(output).toContain('<MyFolder>')
+      expect(output).toContain('</MyFolder>')
+    })
+
+    it('should work with multiple path segments', () => {
+      const deepDir = join(tempDir, 'first-level', 'second-level')
+      mkdirSync(deepDir, { recursive: true })
+      const deepFile = join(deepDir, 'deep-file.md')
+      writeFileSync(deepFile, '# Deep Content')
+
+      const mainContent = dedent`
+        # Main
+        @@first-level/second-level/deep-file.md
+      `
+      writeFileSync(testFile, mainContent)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --tag-case pascal --convert-path-to-tag-strategy all "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toContain('<FirstLevel>')
+      expect(output).toContain('<SecondLevel>')
+    })
+
+    it('should work with custom root tag', () => {
+      const content = dedent`
+        # Test
+        Content
+      `
+      writeFileSync(testFile, content)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --tag-case pascal --root-tag-name my-root "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      expect(output).toContain('<MyRoot>')
+      expect(output).toContain('</MyRoot>')
+    })
+
+    it('should work with sorting', () => {
+      const dirA = join(tempDir, 'aaa')
+      const dirZ = join(tempDir, 'zzz')
+      mkdirSync(dirA, { recursive: true })
+      mkdirSync(dirZ, { recursive: true })
+
+      writeFileSync(join(dirA, 'file.md'), '# AAA Content')
+      writeFileSync(join(dirZ, 'file.md'), '# ZZZ Content')
+
+      const mainContent = dedent`
+        # Main
+        @@aaa/file.md
+        @@zzz/file.md
+      `
+      writeFileSync(testFile, mainContent)
+
+      const output = execSync(
+        `node ${originalCwd}/dist/cli.js --tag-case pascal --sort-tag-to-bottom zzz "${testFile}"`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+
+      const aaaIndex = output.indexOf('<Aaa>')
+      const zzzIndex = output.indexOf('<Zzz>')
+      expect(aaaIndex).toBeLessThan(zzzIndex)
+    })
+  })
 })

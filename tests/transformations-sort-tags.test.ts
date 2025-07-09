@@ -29,8 +29,8 @@ describe('sortTagsToBottom', () => {
     expect((result[0] as XmlElement).name).toBe('a')
     expect((result[1] as XmlElement).name).toBe('b')
     expect((result[2] as XmlElement).name).toBe('c')
-    expect((result[3] as XmlElement).name).toBe('bar')
-    expect((result[4] as XmlElement).name).toBe('foo')
+    expect((result[3] as XmlElement).name).toBe('foo')
+    expect((result[4] as XmlElement).name).toBe('bar')
   })
 
   it('should sort tags recursively at all levels', () => {
@@ -58,8 +58,8 @@ describe('sortTagsToBottom', () => {
     expect(parent.elements).toHaveLength(4)
     expect((parent.elements![0] as XmlElement).name).toBe('a')
     expect((parent.elements![1] as XmlElement).name).toBe('b')
-    expect((parent.elements![2] as XmlElement).name).toBe('bar')
-    expect((parent.elements![3] as XmlElement).name).toBe('foo')
+    expect((parent.elements![2] as XmlElement).name).toBe('foo')
+    expect((parent.elements![3] as XmlElement).name).toBe('bar')
 
     expect((result[1] as XmlElement).name).toBe('other')
     expect((result[2] as XmlElement).name).toBe('bar')
@@ -125,7 +125,7 @@ describe('sortTagsToBottom', () => {
     expect((root.elements![1] as XmlElement).name).toBe('foo')
   })
 
-  it('should maintain relative order of bottom tags', () => {
+  it('should respect configuration array order for bottom tags', () => {
     const input: ParsedLine[] = [
       { type: 'element', name: 'a' },
       { type: 'element', name: 'foo' },
@@ -135,15 +135,39 @@ describe('sortTagsToBottom', () => {
       { type: 'element', name: 'foo' },
     ]
 
-    const result = sortTagsToBottom(input, ['foo', 'bar'])
+    const result = sortTagsToBottom(input, ['bar', 'foo'])
 
     expect(result).toHaveLength(6)
     expect((result[0] as XmlElement).name).toBe('a')
     expect((result[1] as XmlElement).name).toBe('b')
     expect((result[2] as XmlElement).name).toBe('c')
-    expect((result[3] as XmlElement).name).toBe('foo')
-    expect((result[4] as XmlElement).name).toBe('bar')
+    expect((result[3] as XmlElement).name).toBe('bar')
+    expect((result[4] as XmlElement).name).toBe('foo')
     expect((result[5] as XmlElement).name).toBe('foo')
+  })
+
+  it('should sort bottom tags according to configuration array order', () => {
+    const input: ParsedLine[] = [
+      { type: 'element', name: 'rules' },
+      { type: 'element', name: 'roles' },
+      { type: 'element', name: 'other' },
+      { type: 'element', name: 'query' },
+      { type: 'element', name: 'instructions' },
+    ]
+
+    const result = sortTagsToBottom(input, [
+      'roles',
+      'rules',
+      'instructions',
+      'query',
+    ])
+
+    expect(result).toHaveLength(5)
+    expect((result[0] as XmlElement).name).toBe('other')
+    expect((result[1] as XmlElement).name).toBe('roles')
+    expect((result[2] as XmlElement).name).toBe('rules')
+    expect((result[3] as XmlElement).name).toBe('instructions')
+    expect((result[4] as XmlElement).name).toBe('query')
   })
 
   it('should handle elements with attributes', () => {

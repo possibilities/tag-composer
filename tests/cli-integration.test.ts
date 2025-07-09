@@ -1228,12 +1228,12 @@ describe('CLI Integration', () => {
           <c>
             # Content C
           </c>
-          <bar>
-            # Content Bar
-          </bar>
           <foo>
             # Content Foo
           </foo>
+          <bar>
+            # Content Bar
+          </bar>
         </document>
       
       `)
@@ -1285,12 +1285,12 @@ describe('CLI Integration', () => {
             <b>
               # B content
             </b>
-            <bar>
-              # Bar content
-            </bar>
             <foo>
               # Foo content
             </foo>
+            <bar>
+              # Bar content
+            </bar>
           </parent>
         </document>
       

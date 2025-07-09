@@ -13,9 +13,10 @@ export function sortTagsToBottom(
   }
 
   const tagNamesSet = new Set(tagNames)
+  const tagOrderMap = new Map(tagNames.map((name, index) => [name, index]))
 
   function sortElementsRecursively(nodes: XmlNode[]): XmlNode[] {
-    const sortedNodes: XmlNode[] = []
+    const topNodes: XmlNode[] = []
     const bottomNodes: XmlNode[] = []
 
     for (const node of nodes) {
@@ -30,14 +31,20 @@ export function sortTagsToBottom(
         if (shouldMoveToBottom) {
           bottomNodes.push(processedNode)
         } else {
-          sortedNodes.push(processedNode)
+          topNodes.push(processedNode)
         }
       } else {
-        sortedNodes.push(node)
+        topNodes.push(node)
       }
     }
 
-    return [...sortedNodes, ...bottomNodes]
+    const sortedBottomNodes = bottomNodes.sort((a, b) => {
+      const aIndex = tagOrderMap.get((a as XmlElement).name) ?? Infinity
+      const bIndex = tagOrderMap.get((b as XmlElement).name) ?? Infinity
+      return aIndex - bIndex
+    })
+
+    return [...topNodes, ...sortedBottomNodes]
   }
 
   return sortElementsRecursively(elements) as ParsedLine[]

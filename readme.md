@@ -1,5 +1,7 @@
 # Tag Composer
 
+[![npm version](https://badge.fury.io/js/tag-composer.svg)](https://www.npmjs.com/package/tag-composer)
+
 Compose the content of markdown files into an xml-like tag structure.
 
 ## What does it do?
